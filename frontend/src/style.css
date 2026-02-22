@@ -1,0 +1,48 @@
+@import 'highlight.js/styles/github-dark.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-card-hover: #1f2235;
+  --border: #2a2d3e;
+  --text: #e2e8f0;
+  --text-muted: #8892a4;
+  --accent: #5b6ef5;
+  --accent-hover: #4a5ce0;
+  --easy: #34d399;
+  --normal: #fbbf24;
+  --hard: #f87171;
+  --radius: 10px;
+  --font: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+
+pre code.hljs {
+  border-radius: 8px;
+  font-size: 13px;
+  padding: 16px;
+}
