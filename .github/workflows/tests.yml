@@ -23,6 +23,7 @@ jobs:
         env:
           ADMIN_PASSWORD: "testpassword"
           SECRET_KEY: "test-secret-key-at-least-32-characters-long"
+          PYTHONPATH: "."
         run: uv run pytest tests/ -v
 
   test-bot:
