@@ -22,3 +22,7 @@ jobs:
       - name: Run tests
         working-directory: bot
         run: uv run pytest tests/ -v
+        env:
+          BOT_TOKEN: "fake_token_for_tests"
+          ADMIN_IDS: "123456"
+          run: uv run pytest tests/ -v
