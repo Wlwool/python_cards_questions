@@ -39,11 +39,16 @@ docker compose exec backend python app/scripts/migrate_md.py --file app/scripts/
 Скрипт парсит markdown файл и загружает карточки в БД.
 Формат файла: заголовки H1/H2 - категории, H3+ - вопросы.
 
-```bash
 # Импорт с очисткой старых данных
+```bash
 docker compose exec backend python scripts/migrate_md.py --file questions.md --clear
-
+```
+или
+```bash
+docker compose exec -e PYTHONPATH=/app backend uv run python app/scripts/migrate_md.py --file app/scripts/questions.md --clear
+```
 # Импорт без очистки (добавляет к существующим)
+```
 docker compose exec backend python scripts/migrate_md.py --file questions.md
 ```
 
