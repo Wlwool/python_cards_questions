@@ -42,7 +42,7 @@ def find_user(user_id: int) -> str | None:
 
 ### Чем отличается Union от нового синтаксиса с вертикальной чертой
 
-`Union[X, Y]` и `X | Y` — одно и то же, но `X | Y` появился в Python 3.10 и считается предпочтительным как более читаемый. `X | None` заменяет `Optional[X]`.
+`Union[X, Y]` и `X | Y` - одно и то же, но `X | Y` появился в Python 3.10 и считается предпочтительным как более читаемый. `X | None` заменяет `Optional[X]`.
 
 ```python
 from typing import Union
