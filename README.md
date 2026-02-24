@@ -48,8 +48,8 @@ docker compose exec backend python scripts/migrate_md.py --file questions.md --c
 docker compose exec -e PYTHONPATH=/app backend uv run python app/scripts/migrate_md.py --file app/scripts/questions.md --clear
 ```
 # Импорт без очистки (добавляет к существующим)
-```
-docker compose exec backend python scripts/migrate_md.py --file questions.md
+```bash
+docker compose exec -e PYTHONPATH=/app backend uv run python app/scripts/migrate_md.py --file app/scripts/new_questions.md
 ```
 
 После импорта можно вручную выставить difficulty через admin UI.
