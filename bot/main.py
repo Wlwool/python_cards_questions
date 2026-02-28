@@ -20,14 +20,14 @@ router = Router()
 dp.include_router(router)
 
 
-async def send_card_messages(chat_id: int, card):
+async def send_card_messages(chat_id: int, card) -> None:
     """Отправляет карточку одному пользователю, разбивая на части если нужно."""
     parts = format_card(card)
     for part in parts:
-        await bot.send_message(chat_id, part, parse_mode="MarkdownV2")
+        await bot.send_message(chat_id, part, parse_mode="HTML")
 
 
-async def send_scheduled_cards():
+async def send_scheduled_cards() -> None:
     """Отправляет серию карточек по расписанию всем пользователям."""
     db = SessionLocal()
     try:
@@ -36,13 +36,22 @@ async def send_scheduled_cards():
         if not cards:
             log.warning("Нет карточек в БД")
             return
+        last_sent_id = last_id  # сохранение на случай ошибок
 
         for chat_id in settings.admin_ids:
             for i, card in enumerate(cards):
-                await send_card_messages(chat_id, card)
+                try:
+                    await send_card_messages(chat_id, card)
+                    last_sent_id = card.id
+                except Exception as e:
+                    log.error(
+                        f"Ошибка при отпарвке карточки id={card.id} в чат {chat_id}: {e}"
+                    )
+                    save_last_id(last_sent_id)
                 # пауза между карточками кроме последней
                 if i < len(cards) - 1:
                     await asyncio.sleep(settings.pause_between_cards_seconds)
+
 
         # сохраняет id последней отправленной карточки
         save_last_id(cards[-1].id)
@@ -52,7 +61,7 @@ async def send_scheduled_cards():
 
 
 @router.message(Command("card"))
-async def cmd_card(message: Message):
+async def cmd_card(message: Message) -> None:
     if message.from_user.id not in settings.admin_ids:
         return
 
@@ -68,17 +77,16 @@ async def cmd_card(message: Message):
 
 
 @router.message(Command("start"))
-async def cmd_start(message: Message):
+async def cmd_start(message: Message) -> None:
     if message.from_user.id not in settings.admin_ids:
         return
     await message.answer(
         "Бот для изучения Python карточек\\.\n\n"
         "/card — случайная карточка прямо сейчас",
-        parse_mode="MarkdownV2",
     )
 
 
-async def main():
+async def main() -> None:
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         send_scheduled_cards,

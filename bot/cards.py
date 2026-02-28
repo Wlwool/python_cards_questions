@@ -1,5 +1,6 @@
 import json
 import random
+from html import escape
 
 from sqlalchemy.orm import Session
 
@@ -30,27 +31,28 @@ def format_card(card: Card) -> list[str]:
     difficulty_emoji = {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(card.difficulty, "⚪")
 
     text = (
-        f"{difficulty_emoji} *{card.category}*\n\n"
-        f"❓ *{escape_md(card.question)}*\n\n"
-        f"{escape_md(card.answer)}"
+        f"{difficulty_emoji} *{escape(card.category)}*\n\n"
+        f"❓ *{escape(card.question)}*\n\n"
+        f"{escape(card.answer)}"
     )
 
     if card.code_example:
-        text += f"\n\n```python\n{card.code_example}\n```"
+        text += f"\n\n<pre><code class=\"language-python\">{escape(card.code_example)}</code></pre>"
 
     tags = json.loads(card.tags or "[]")
     if tags:
-        text += "\n\n🏷 " + " ".join(f"`{t}`" for t in tags)
+        tags_line = " ".join(f"<code>{escape(t)}</code>" for t in tags)
+        text += f"\n\n🏷 {tags_line}"
 
     return split_message(text)
 
 
-def escape_md(text: str) -> str:
-    """Экранирует спецсимволы Markdown v2."""
-    chars = r"_*[]()~`>#+-=|{}.!"
-    for ch in chars:
-        text = text.replace(ch, f"\\{ch}")
-    return text
+# def escape_md(text: str) -> str:
+#     """Экранирует спецсимволы Markdown v2."""
+#     chars = r"_*[]()~`>#+-=|{}.!"
+#     for ch in chars:
+#         text = text.replace(ch, f"\\{ch}")
+#     return text
 
 
 def split_message(text: str, limit: int = 4096) -> list[str]:
