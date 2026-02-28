@@ -30,7 +30,8 @@ def parse_cards(text: str) -> list[dict]:
     current_category = "General"
     current_question = None
     current_answer_lines = []
-    current_code_lines = []
+    current_code_blocks: list[list[str]] = []
+    current_code_lines: list[str] = []
     in_code_block = False
 
     lines = text.splitlines()
@@ -39,7 +40,19 @@ def parse_cards(text: str) -> list[dict]:
         if not current_question:
             return
         answer = "\n".join(current_answer_lines).strip()
-        code = "\n".join(current_code_lines).strip() if current_code_lines else None
+
+        if current_code_blocks:
+            if len(current_code_blocks) == 1:
+                code = "\n".join(current_code_blocks[0]).strip()
+            else:
+                parts = []
+                for i, block_lines in enumerate(current_code_blocks, start=1):
+                    parts.append(f"# Пример {i}")
+                    parts.append("\n".join(block_lines).strip())
+                code = "\n\n".join(parts)
+        else:
+            code = None
+
         cards.append({
             "question": current_question.strip(),
             "answer": answer,
@@ -56,6 +69,8 @@ def parse_cards(text: str) -> list[dict]:
                 in_code_block = True
                 current_code_lines = []
             else:
+                current_code_blocks.append(current_code_lines)
+                current_code_lines = []
                 in_code_block = False
             continue
 
@@ -74,6 +89,7 @@ def parse_cards(text: str) -> list[dict]:
                 flush_card()
                 current_question = None
                 current_answer_lines = []
+                current_code_blocks = []
                 current_code_lines = []
                 current_category = title
             else:
@@ -81,6 +97,7 @@ def parse_cards(text: str) -> list[dict]:
                 flush_card()
                 current_question = title
                 current_answer_lines = []
+                current_code_blocks = []
                 current_code_lines = []
             continue
 
