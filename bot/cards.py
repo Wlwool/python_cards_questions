@@ -31,28 +31,22 @@ def format_card(card: Card) -> list[str]:
     difficulty_emoji = {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(card.difficulty, "⚪")
 
     text = (
-        f"{difficulty_emoji} *{escape(card.category)}*\n\n"
-        f"❓ *{escape(card.question)}*\n\n"
+        f"{difficulty_emoji} <b>{escape(card.category)}</b>\n\n"
+        f"❓ <b>{escape(card.question)}</b>\n\n"
         f"{escape(card.answer)}"
     )
-
-    if card.code_example:
-        text += f"\n\n<pre><code class=\"language-python\">{escape(card.code_example)}</code></pre>"
 
     tags = json.loads(card.tags or "[]")
     if tags:
         tags_line = " ".join(f"<code>{escape(t)}</code>" for t in tags)
         text += f"\n\n🏷 {tags_line}"
 
-    return split_message(text)
+    parts = split_message(text)
+    if card.code_example:
+        code_message = f"<pre><code class=\"language-python\">{escape(card.code_example)}</code></pre>"
+        parts.append(code_message)
 
-
-# def escape_md(text: str) -> str:
-#     """Экранирует спецсимволы Markdown v2."""
-#     chars = r"_*[]()~`>#+-=|{}.!"
-#     for ch in chars:
-#         text = text.replace(ch, f"\\{ch}")
-#     return text
+    return parts
 
 
 def split_message(text: str, limit: int = 4096) -> list[str]:
