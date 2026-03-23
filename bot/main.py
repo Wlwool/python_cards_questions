@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from datetime import datetime, timedelta, timezone
 from aiogram import Bot, Dispatcher, Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -18,46 +19,83 @@ bot = Bot(token=settings.bot_token)
 dp = Dispatcher()
 router = Router()
 dp.include_router(router)
+send_lock = asyncio.Lock()
+
+RETRY_DELAYS = [30, 60, 90]
 
 
 async def send_card_messages(chat_id: int, card) -> None:
-    """Отправляет карточку одному пользователю, разбивая на части если нужно."""
+    """Отправляет карточку одному пользователю, разбивая на части если нужно.
+    Паузы при сетевой ошибке.
+    """
     parts = format_card(card)
     for part in parts:
-        await bot.send_message(chat_id, part, parse_mode="HTML")
+        for attempt, delay in enumerate(RETRY_DELAYS, start=1):
+            try:
+                await bot.send_message(chat_id, part, parse_mode="HTML")
+                break
+            except Exception as e:
+                if attempt == len(RETRY_DELAYS):
+                    raise
+                log.warning(f"Попытка {attempt}/{len(RETRY_DELAYS)} не удалась"
+                            f"(карточка id = {card.id}), чат {chat_id}: {e})."
+                            f"Повтор через {delay} сек.")
+                await asyncio.sleep(delay)
 
 
-async def send_scheduled_cards() -> None:
-    """Отправляет серию карточек по расписанию всем пользователям."""
-    db = SessionLocal()
-    try:
-        last_id = load_last_id()
-        cards = get_next_cards(db, settings.cards_per_session, last_id)
-        if not cards:
-            log.warning("Нет карточек в БД")
-            return
-        last_sent_id = last_id  # сохранение на случай ошибок
+async def send_scheduled_cards(scheduler: AsyncIOScheduler) -> None:
+    """Отправляет серию карточек по расписанию всем пользователям.
+    При провале повторно отправляет через 15 минут.
+    """
+    if send_lock.locked():
+        log.info("Сессия выполняется, пропускается запуск")
+        return
+    async with send_lock:
+        db = SessionLocal()
+        try:
+            last_id = load_last_id()
+            cards = get_next_cards(db, settings.cards_per_session, last_id)
+            if not cards:
+                log.warning("Нет карточек в БД")
+                return
 
-        for chat_id in settings.admin_ids:
-            for i, card in enumerate(cards):
-                try:
-                    await send_card_messages(chat_id, card)
-                    last_sent_id = card.id
-                except Exception as e:
-                    log.error(
-                        f"Ошибка при отпарвке карточки id={card.id} в чат {chat_id}: {e}"
-                    )
-                    save_last_id(last_sent_id)
-                # пауза между карточками кроме последней
-                if i < len(cards) - 1:
-                    await asyncio.sleep(settings.pause_between_cards_seconds)
+            last_sent_id = last_id
 
+            for chat_id in settings.admin_ids:
+                for i, card in enumerate(cards):
+                    try:
+                        await send_card_messages(chat_id, card)
+                        last_sent_id = card.id
+                    except Exception as e:
+                        log.error(
+                            f"Все попытки исчерпаны для карточки id={card.id} "
+                            f"в чат {chat_id}: {e}. "
+                            f"Повтор сессии через 15 минут."
+                        )
+                        save_last_id(last_sent_id)
+                        _schedule_retry(scheduler)
+                        return
 
-        # сохраняет id последней отправленной карточки
-        save_last_id(cards[-1].id)
-        log.info(f"Отправлено {len(cards)} карточек, последний id: {cards[-1].id}")
-    finally:
-        db.close()
+                    if i < len(cards) - 1:
+                        await asyncio.sleep(settings.pause_between_cards_seconds)
+
+            save_last_id(cards[-1].id)
+            log.info(f"Отправлено {len(cards)} карточек, последний id: {cards[-1].id}")
+        finally:
+            db.close()
+
+def _schedule_retry(scheduler: AsyncIOScheduler) -> None:
+    """Планирует повторную попытку отправки через 15 мин."""
+    run_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    scheduler.add_job(
+        send_scheduled_cards,
+        trigger="date",
+        run_date=run_at,
+        args=[scheduler],
+        id="retry_send",
+        replace_existing=True,
+    )
+    log.info(f"Повторная попытка запланирована на {run_at.strftime('%H:%M:%S')}")
 
 
 @router.message(Command("card"))
@@ -92,8 +130,9 @@ async def main() -> None:
         send_scheduled_cards,
         trigger="interval",
         hours=settings.schedule_interval_hours,
+        args=[scheduler],
     )
-    scheduler.add_job(send_scheduled_cards, trigger="date")
+    scheduler.add_job(send_scheduled_cards, trigger="date", args=[scheduler])
     scheduler.start()
     log.info(f"Scheduler запущен, интервал: {settings.schedule_interval_hours}ч")
 
