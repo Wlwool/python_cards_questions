@@ -7,7 +7,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cards import escape_md, split_message, format_card, get_next_cards, get_random_card
+from cards import split_message, format_card, get_next_cards, get_random_card
 from models import Card
 
 
@@ -27,20 +27,6 @@ def make_card(**kwargs) -> Card:
     for k, v in defaults.items():
         setattr(card, k, v)
     return card
-
-
-class TestEscapeMd:
-    def test_escapes_special_chars(self):
-        assert escape_md("hello.world") == "hello\\.world"
-
-    def test_escapes_parentheses(self):
-        assert escape_md("func()") == "func\\(\\)"
-
-    def test_plain_text_unchanged(self):
-        assert escape_md("hello world") == "hello world"
-
-    def test_empty_string(self):
-        assert escape_md("") == ""
 
 
 class TestSplitMessage:
@@ -103,15 +89,22 @@ class TestFormatCard:
         result = format_card(card)
         assert any("🔴" in part for part in result)
 
-    def test_code_example_included(self):
+    def test_code_example_in_separate_message(self):
         card = make_card(code_example="print('hello')")
         result = format_card(card)
+        # код идёт отдельным сообщением последним элементом списка
         assert any("print" in part for part in result)
+        assert "<pre>" in result[-1]
 
     def test_no_code_example(self):
         card = make_card(code_example=None)
         result = format_card(card)
         assert any("list" in part.lower() or "последовательность" in part for part in result)
+
+    def test_code_example_none_no_pre_tag(self):
+        card = make_card(code_example=None)
+        result = format_card(card)
+        assert not any("<pre>" in part for part in result)
 
     def test_tags_included(self):
         card = make_card(tags=json.dumps(["list", "basics"]))
@@ -124,6 +117,14 @@ class TestFormatCard:
         result = format_card(card)
         assert all(len(part) <= 4096 for part in result)
 
+    def test_special_chars_escaped(self):
+        card = make_card(answer="цена < 100 & скидка > 10%")
+        result = format_card(card)
+        full = "".join(result)
+        assert "&lt;" in full
+        assert "&gt;" in full
+        assert "&amp;" in full
+
 
 class TestGetNextCards:
     def test_returns_requested_count(self):
@@ -135,7 +136,6 @@ class TestGetNextCards:
 
     def test_wraps_around_when_end_reached(self):
         db = MagicMock()
-        # первый запрос возвращает 1 карточку вместо 3
         first_cards = [make_card(id=10)]
         extra_cards = [make_card(id=1), make_card(id=2)]
         db.query().filter().order_by().limit().all.return_value = first_cards
