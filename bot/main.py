@@ -119,7 +119,7 @@ async def cmd_start(message: Message) -> None:
     if message.from_user.id not in settings.admin_ids:
         return
     await message.answer(
-        "Бот для изучения Python карточек\\.\n\n"
+        "Бот для изучения Python по карточкам\\.\n\n"
         "/card — случайная карточка прямо сейчас",
     )
 
