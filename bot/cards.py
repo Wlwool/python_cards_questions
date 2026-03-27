@@ -11,7 +11,7 @@ def get_next_cards(db: Session, count: int, last_id: int = 0) -> list[Card]:
     """Возвращает следующие карточки по порядку начиная с last_id."""
     cards = db.query(Card).filter(Card.id > last_id).order_by(Card.id).limit(count).all()
 
-    # если дошли до конца — начинаем сначала
+    # если дошли до конца - начинаем сначала
     if len(cards) < count:
         extra = db.query(Card).order_by(Card.id).limit(count - len(cards)).all()
         cards += extra
@@ -43,9 +43,10 @@ def format_card(card: Card) -> list[str]:
 
     parts = split_message(text)
     if card.code_example:
-        code_message = f"<pre><code class=\"language-python\">{escape(card.code_example)}</code></pre>"
-        parts.append(code_message)
-
+        for code_part in split_message(card.code_example, limit=4000):
+            parts.append(
+                f"<pre><code class=\"language-python\">{escape(code_part)}</code></pre>"
+            )
     return parts
 
 

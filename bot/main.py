@@ -3,6 +3,7 @@ import logging
 
 from datetime import datetime, timedelta, timezone
 from aiogram import Bot, Dispatcher, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -34,12 +35,18 @@ async def send_card_messages(chat_id: int, card) -> None:
             try:
                 await bot.send_message(chat_id, part, parse_mode="HTML")
                 break
+            except TelegramBadRequest as e:
+                log.error(
+                    f"Bad Request для карточки id={card.id} (чат {chat_id}): {e}. Пропускаем.")
+                break
             except Exception as e:
                 if attempt == len(RETRY_DELAYS):
                     raise
-                log.warning(f"Попытка {attempt}/{len(RETRY_DELAYS)} не удалась"
-                            f"(карточка id = {card.id}), чат {chat_id}: {e})."
-                            f"Повтор через {delay} сек.")
+                log.warning(
+                    f"Попытка {attempt}/{len(RETRY_DELAYS)} не удалась "
+                    f"(карточка id={card.id}, чат {chat_id}): {e}. "
+                    f"Повтор через {delay} сек..."
+                )
                 await asyncio.sleep(delay)
 
 
