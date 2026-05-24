@@ -39,6 +39,8 @@ async def send_card_to_telegram(chat_id: int, card) -> None:
             except TelegramBadRequest as e:
                 log.error(f"Telegram BadRequest карточка id={card.id} чат {chat_id}: {e}")
                 break
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 if attempt == len(RETRY_DELAYS):
                     raise
@@ -126,6 +128,18 @@ def _schedule_retry(scheduler: AsyncIOScheduler, discord: DiscordSender) -> None
     log.info(f"Повторная попытка запланирована на {run_at.strftime('%H:%M:%S')}")
 
 
+async def _run_polling() -> None:
+    """Polling в отдельной задаче его падение не роняет scheduler и Discord."""
+    while True:
+        try:
+            await dp.start_polling(bot)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            log.error(f"Polling down with error: {e}. Retry at 60 sec...")
+            await asyncio.sleep(60)
+
+
 @router.message(Command("card"))
 async def cmd_card(message: Message) -> None:
     if message.from_user.id not in settings.admin_ids:
@@ -173,9 +187,12 @@ async def main() -> None:
     log.info(f"Scheduler запущен, интервал: {settings.schedule_interval_hours}ч")
 
     try:
-        await dp.start_polling(bot)
-    except Exception as e:
-        log.error(f"Polling error: {e}")
+        if settings.telegram_enabled:
+            await _run_polling()
+        else:
+            log.info(
+                "Telegram отключён (TELEGRAM_ENABLED=false), работает только Discord")
+            await asyncio.Event().wait()
     finally:
         await discord.stop()
 
