@@ -9,7 +9,7 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./data/cards.db")
     cards_per_session: int = int(os.getenv("CARDS_PER_SESSION", "4"))
     schedule_interval_hours: int = int(os.getenv("SCHEDULE_INTERVAL_HOURS", "5"))
-    pause_between_cards_seconds: int = int(os.getenv("PAUSE_BETWEEN_CARDS_SECONDS", "180"))
+    pause_between_cards_seconds: int = int(os.getenv("PAUSE_BETWEEN_CARDS_SECONDS", "240"))
 
     discord_webhook_url: str = os.getenv("DISCORD_WEBHOOK_URL", "")
     discord_max_length: int = 2000
