@@ -1,3 +1,4 @@
+import asyncio
 import aiohttp
 import logging
 from typing import Optional
@@ -25,15 +26,20 @@ class DiscordSender:
         if not messages:
             return True
 
-        success = True
+        failed = 0
+        total = 0
         for message in messages:
             for chunk in _split_into_chunks(message):
+                total += 1
                 if not await self._post(chunk):
-                    success = False
+                    failed += 1
 
-        if success:
-            log.info(f"Discord: отправлено {len(messages)} сообщений")
-        return success
+        if failed:
+            log.error(f"Discord: не отправлено {failed}/{total} чанков")
+            return False
+
+        log.info(f"Discord: отправлено {total} чанков ({len(messages)} сообщений)")
+        return True
 
 
     async def _post(self, content: str) -> bool:
@@ -46,9 +52,14 @@ class DiscordSender:
                     self.webhook_url, json={"content": content}) as r:
                 if r.status in (200, 204):
                     return True
+                if r.status == 429:
+                    retry_after = (await r.json()).get("retry_after", 5)
+                    log.warning(f"Discord: rate limit, повтор через {retry_after} сек")
+                    await asyncio.sleep(retry_after)
+                    return await self._post(content)
                 log.error(f"Discord: webhook вернул {r.status}: {await r.text()}")
                 return False
-        except aiohttp.ClientError as e:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             log.error(f"Discord: ошибка сети: {e}")
             return False
 
