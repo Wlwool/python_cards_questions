@@ -1,12 +1,13 @@
 import json
 import random
 from html import escape
-
 from sqlalchemy.orm import Session
-
 from config import settings
 from models import Card
 
+
+def _difficulty_emoji(difficulty: str) -> str:
+    return {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(difficulty, "⚪")
 
 def get_next_cards(db: Session, count: int, last_id: int = 0) -> list[Card]:
     """Возвращает следующие карточки по порядку начиная с last_id."""
@@ -15,7 +16,6 @@ def get_next_cards(db: Session, count: int, last_id: int = 0) -> list[Card]:
     if len(cards) < count:
         extra = db.query(Card).order_by(Card.id).limit(count - len(cards)).all()
         cards += extra
-
     return cards
 
 
@@ -28,19 +28,17 @@ def get_random_card(db: Session) -> Card | None:
 
 def format_card(card: Card) -> list[str]:
     """Форматирует карточку для Telegram (HTML)."""
-    difficulty_emoji = {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(card.difficulty, "⚪")
+    difficulty_emoji = _difficulty_emoji(card.difficulty)
 
     text = (
         f"{difficulty_emoji} <b>{escape(card.category)}</b>\n\n"
         f"❓ <b>{escape(card.question)}</b>\n\n"
-        f"{escape(card.answer)}"
-    )
+        f"{escape(card.answer)}")
 
     tags = json.loads(card.tags or "[]")
     if tags:
         tags_line = " ".join(f"<code>{escape(t)}</code>" for t in tags)
         text += f"\n\n🏷 {tags_line}"
-
     parts = _split_telegram(text)
 
     if card.code_example:
@@ -70,10 +68,10 @@ def _split_telegram(text: str, limit: int = 4096) -> list[str]:
 
 def format_card_discord(card: Card) -> list[str]:
     """Форматирует карточку для Discord (Markdown)."""
-    difficulty_emoji = {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(card.difficulty, "⚪")
+    difficulty_emoji = _difficulty_emoji(card.difficulty)
     text = (
-        f"{difficulty_emoji} **{card.category}**\n"
-        f"**``` {card.question} ```**"
+        f"{difficulty_emoji} **{card.category}**\n\n"
+        f"**```{card.question} ```**"
         f"{card.answer}\n")
 
     tags = json.loads(card.tags or "[]")
