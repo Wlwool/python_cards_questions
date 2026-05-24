@@ -83,6 +83,8 @@ docker compose exec -e PYTHONPATH=/app backend uv run python app/scripts/migrate
 
 docker compose up -d --build
 
+docker compose up -d --build bot отдельно запуск бота
+
 docker compose logs -f
 
 docker compose logs -f bot
