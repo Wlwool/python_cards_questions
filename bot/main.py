@@ -55,6 +55,9 @@ async def send_card_to_telegram(chat_id: int, card) -> None:
 async def send_scheduled_cards(scheduler: AsyncIOScheduler, discord: DiscordSender) -> None:
     """Отправляет серию карточек по расписанию всем пользователям.
     При провале повторно отправляет через 15 минут.
+    # Discord и Telegram запускаются параллельно. Discord приоритетен
+    и его ошибка только логируется.
+    Telegram ошибка - прерывает сессию и планирует ретрай.
     """
     if send_lock.locked():
         log.info("Сессия уже выполняется, пропуск")
@@ -73,33 +76,32 @@ async def send_scheduled_cards(scheduler: AsyncIOScheduler, discord: DiscordSend
 
             for i, card in enumerate(cards):
                 discord_parts = format_card_discord(card)
-                # Discord и Telegram запускаются параллельно
-                # Discord приоритетен и его ошибка только логируется
-                # Telegram ошибка - прерывает сессию и планирует ретрай
-                discord_task = asyncio.create_task(discord.send(discord_parts))
-                tg_task = asyncio.create_task(_send_tg_to_all(card))
+                if settings.telegram_enabled:
+                    discord_task = asyncio.create_task(discord.send(discord_parts))
+                    tg_task = asyncio.create_task(_send_tg_to_all(card))
 
-                discord_result, tg_result = await asyncio.gather(
-                    discord_task, tg_task, return_exceptions=True
-                )
+                    discord_result, tg_result = await asyncio.gather(
+                        discord_task, tg_task, return_exceptions=True)
 
-                if isinstance(discord_result, Exception):
-                    log.error(
-                        f"Discord: исключение карточка id={card.id}: {discord_result}")
-                elif not discord_result:
-                    log.error(f"Discord: ошибка отправки карточка id={card.id}")
+                    if isinstance(discord_result, Exception):
+                        log.error(
+                            f"Discord: исключение карточка id={card.id}: {discord_result}")
+                    elif not discord_result:
+                        log.error(f"Discord: ошибка отправки карточка id={card.id}")
 
-                if isinstance(tg_result, Exception):
-                    log.error(
-                        f"Telegram: все попытки исчерпаны карточка id={card.id}: {tg_result}. "
-                        f"Повтор сессии через 15 минут."
-                    )
-                    save_last_id(last_sent_id)
-                    _schedule_retry(scheduler, discord)
-                    return
-
+                    if isinstance(tg_result, Exception):
+                        log.error(
+                            f"Telegram: все попытки исчерпаны карточка id={card.id}: {tg_result}. "
+                            f"Повтор сессии через 15 минут.")
+                        save_last_id(last_sent_id)
+                        _schedule_retry(scheduler, discord)
+                        return
+                else:
+                    ok = await discord.send(discord_parts)
+                    if not ok:
+                        log.error(f"Discord: ошибка отправки карточка id={card.id}")
                 last_sent_id = card.id
-                save_last_id(last_sent_id) # сохранять last_sent_id после каждой успешно отправленной карточки
+                save_last_id(last_sent_id)
 
                 if i < len(cards) - 1:
                     await asyncio.sleep(settings.pause_between_cards_seconds)
@@ -184,7 +186,10 @@ async def main() -> None:
         args=[scheduler, discord],
     )
     scheduler.start()
-    log.info(f"Scheduler запущен, интервал: {settings.schedule_interval_hours}ч")
+    log.info(
+        f"Scheduler запущен, интервал: {settings.schedule_interval_hours}ч, "
+        f"Telegram: {'включён' if settings.telegram_enabled else 'отключён'}"
+    )
 
     try:
         if settings.telegram_enabled:
