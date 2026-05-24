@@ -97,16 +97,16 @@ async def send_scheduled_cards(scheduler: AsyncIOScheduler, discord: DiscordSend
                     return
 
                 last_sent_id = card.id
+                save_last_id(last_sent_id) # сохранять last_sent_id после каждой успешно отправленной карточки
 
                 if i < len(cards) - 1:
                     await asyncio.sleep(settings.pause_between_cards_seconds)
 
-            save_last_id(cards[-1].id)
             log.info(f"Отправлено {len(cards)} карточек, последний id: {cards[-1].id}")
         finally:
             db.close()
 
-async def _send_tg_to_all(card, parts, last_sent_id, scheduler) -> None:
+async def _send_tg_to_all(card) -> None:
     """Отправляет карточку всем admin_ids в Telegram."""
     for chat_id in settings.admin_ids:
         await send_card_to_telegram(chat_id, card)
@@ -174,6 +174,8 @@ async def main() -> None:
 
     try:
         await dp.start_polling(bot)
+    except Exception as e:
+        log.error(f"Polling error: {e}")
     finally:
         await discord.stop()
 
