@@ -48,7 +48,6 @@ def format_card(card: Card) -> list[str]:
             parts.append(
                 f"<pre><code class=\"language-python\">{escape(code_part)}</code></pre>"
             )
-
     return parts
 
 def _split_telegram(text: str, limit: int = 4096) -> list[str]:
@@ -74,19 +73,16 @@ def format_card_discord(card: Card) -> list[str]:
     difficulty_emoji = {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(card.difficulty, "⚪")
     text = (
         f"{difficulty_emoji} **{card.category}**\n\n"
-        f"❓ **{card.question}**\n\n"
-        f"{card.answer}"
-    )
+        f"```**{card.question}**```\n"
+        f"{card.answer}\n")
 
     tags = json.loads(card.tags or "[]")
     if tags:
         text += "\n\n🏷 " + " ".join(f"`{t}`" for t in tags)
 
     parts = _split_discord(text)
-
     if card.code_example:
         _append_discord_code(card.code_example, parts)
-
     return parts
 
 
