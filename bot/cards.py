@@ -72,8 +72,8 @@ def format_card_discord(card: Card) -> list[str]:
     """Форматирует карточку для Discord (Markdown)."""
     difficulty_emoji = {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(card.difficulty, "⚪")
     text = (
-        f"{difficulty_emoji} **{card.category}**\n\n"
-        f"```**{card.question}**```\n"
+        f"{difficulty_emoji} **{card.category}**\n"
+        f"**``` {card.question} ```**"
         f"{card.answer}\n")
 
     tags = json.loads(card.tags or "[]")
