@@ -2,9 +2,6 @@ import asyncio
 import aiohttp
 import logging
 from typing import Optional
-
-from watchfiles import awatch
-
 from config import settings
 
 log = logging.getLogger(__name__)
