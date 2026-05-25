@@ -7,7 +7,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cards import split_message, format_card, get_next_cards, get_random_card
+from cards import _split_telegram, format_card, get_next_cards, get_random_card
 from models import Card
 
 
@@ -32,27 +32,27 @@ def make_card(**kwargs) -> Card:
 class TestSplitMessage:
     def test_short_message_not_split(self):
         text = "короткое сообщение"
-        assert split_message(text) == [text]
+        assert _split_telegram(text) == [text]
 
     def test_long_message_split(self):
         text = "а" * 5000
-        parts = split_message(text)
+        parts = _split_telegram(text)
         assert len(parts) > 1
         assert all(len(p) <= 4096 for p in parts)
 
     def test_split_preserves_content(self):
         text = "слово " * 1000
-        parts = split_message(text)
+        parts = _split_telegram(text)
         assert "".join(parts).replace(" ", "") == text.replace(" ", "")
 
     def test_exact_limit_not_split(self):
         text = "а" * 4096
-        assert split_message(text) == [text]
+        assert _split_telegram(text) == [text]
 
     def test_split_prefers_newline(self):
         line = "а" * 100 + "\n"
         text = line * 50
-        parts = split_message(text, limit=512)
+        parts = _split_telegram(text, limit=512)
         for part in parts:
             assert len(part) <= 512
 
