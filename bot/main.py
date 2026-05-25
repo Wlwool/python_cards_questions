@@ -14,7 +14,10 @@ from database import SessionLocal
 from discord_sender import DiscordSender
 from state import load_last_id, save_last_id
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+                    datefmt="%d-%m-%Y %H:%M:%S",
+                    )
 log = logging.getLogger(__name__)
 
 bot = Bot(token=settings.bot_token)
