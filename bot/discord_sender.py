@@ -42,7 +42,7 @@ class DiscordSender:
         return True
 
 
-    async def _post(self, content: str, _retries: int = 2) -> bool:
+    async def _post(self, content: str, _retries: int = 3) -> bool:
         """Отправляет один кусок текста через webhook."""
         if not self.session or self.session.closed:
             log.error("Discord: сессия не открыта")
@@ -62,7 +62,7 @@ class DiscordSender:
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             if _retries > 0:
                 log.warning(f"Discord: network error, retry ({_retries}): {e}")
-                await asyncio.sleep(3)
+                await asyncio.sleep(5)
                 return await self._post(content, _retries - 1)
             log.error(f"Discord: ошибка сети: {e}")
             return False

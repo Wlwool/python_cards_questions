@@ -14,6 +14,6 @@ class Settings:
 
     discord_webhook_url: str = os.getenv("DISCORD_WEBHOOK_URL", "")
     discord_max_length: int = 2000
-    discord_timeout: int = 10
+    discord_timeout: int = 15
 
 settings = Settings()
