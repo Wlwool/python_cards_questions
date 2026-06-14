@@ -178,8 +178,9 @@ async def main() -> None:
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         send_scheduled_cards,
-        trigger="interval",
-        hours=settings.schedule_interval_hours,
+        trigger="cron", # interval
+        hour="7,12,17,22",
+        # hours=settings.schedule_interval_hours,
         args=[scheduler, discord],
     )
     # немедленный запуск при старте
@@ -190,7 +191,7 @@ async def main() -> None:
     )
     scheduler.start()
     log.info(
-        f"Scheduler запущен, интервал: {settings.schedule_interval_hours}ч, "
+        f"Scheduler запущен, "
         f"Telegram: {'включён' if settings.telegram_enabled else 'отключён'}"
     )
 
