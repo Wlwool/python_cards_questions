@@ -1154,3 +1154,96 @@ def verify_token(token: str) -> dict:
 # НИКОГДА не делай так — отключает проверку подписи
 jwt.decode(token, options={"verify_signature": False})
 ```
+
+
+### Что такое Enum и зачем он нужен
+
+Enum — способ объединить набор именованных констант в один тип, вместо того чтобы держать их как отдельные переменные или строки/числа "россыпью". 
+Даёт три преимущества: тайпчекер и IDE знают допустимые значения (автодополнение, проверка), сравнение идёт по объекту, а не по значению (нельзя случайно передать произвольную строку там, где ждут статус), и repr() печатает осмысленное имя вместо голого числа.
+
+```python
+from enum import Enum, auto
+
+class Status(Enum):
+    PENDING = auto()
+    APPROVED = auto()
+    REJECTED = auto()
+
+order_status = Status.PENDING
+print(order_status)          # Status.PENDING
+print(order_status.name)     # 'PENDING'
+print(order_status.value)    # 1
+
+if order_status == Status.PENDING:
+    ...
+
+# сравнение с "магической строкой" — так делать не стоит:
+def process(status: str):   # без Enum легко передать опечатку 'pendign'
+    ...
+
+def process(status: Status): # с Enum опечатка невозможна — тайпчекер её поймает
+    ...
+```
+
+Есть варианты: IntEnum (значения ведут себя как int, можно сравнивать с числами), StrEnum (Python 3.11+, значения — строки), Flag/IntFlag — для комбинируемых битовых флагов через |.
+
+
+### Зачем нужен модуль logging и чем он лучше print
+
+`print` пишет всегда и только в stdout, без возможности отфильтровать по важности, без времени и источника сообщения, и его придётся руками убирать перед продакшеном. 
+`logging` решает эти проблемы: у сообщений есть уровень важности, вывод можно направить в разные места одновременно (консоль, файл, Sentry), и всё это настраивается в одном месте, без правки кода, который логирует.
+Уровни по возрастанию серьёзности: `DEBUG → INFO → WARNING → ERROR → CRITICAL`. Логгер выводит только сообщения своего уровня и выше — например, при INFO сообщения DEBUG просто не покажутся.
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)   # логгер с именем текущего модуля
+logging.basicConfig(level=logging.INFO)
+
+logger.debug("не покажется, т.к. уровень INFO")
+logger.info("сервис запущен")
+logger.warning("подключение медленное: %s мс", 850)
+logger.error("не удалось сохранить заказ %s", order_id, exc_info=True)  # exc_info — приложить трейсбек
+```
+
+Ключевые компоненты: Logger (точка входа, обычно один на модуль через getLogger(__name__)), Handler (куда писать — файл, консоль, сеть), Formatter (в каком виде), Filter (что пропускать). В реальном проекте настраиваются через dictConfig, а не через basicConfig.
+
+
+### Как найти узкое место в производительности кода: cProfile и timeit
+
+`timeit` — измерить время выполнения небольшого кусочка кода, усредняя по многим запускам (чтобы исключить шум от системы):
+
+```python
+import timeit
+
+timeit.timeit("sum(range(1000))", number=10000)
+# среднее время выполнения за 10000 прогонов
+```
+
+cProfile — профилировщик всей функции/программы: показывает, сколько раз вызвана каждая функция и сколько суммарно времени в ней проведено — то есть не "долго ли работает программа", а "какая именно функция съедает время":
+
+```python
+import cProfile
+
+def slow_function():
+    return sum(i ** 2 for i in range(1_000_000))
+
+cProfile.run("slow_function()")
+# ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+```
+
+На практике вывод cProfile обычно смотрят через pstats, отсортировав по cumulative (суммарное время с учётом вложенных вызовов) или tottime (время именно в этой функции, без вложенных):
+
+```python
+import cProfile, pstats
+
+profiler = cProfile.Profile()
+profiler.enable()
+slow_function()
+profiler.disable()
+
+stats = pstats.Stats(profiler).sort_stats("cumulative")
+stats.print_stats(10)  # топ-10 самых затратных функций
+```
+Разница подходов: timeit — точечное "быстрый ли этот фрагмент", cProfile — "какая функция в большой программе виновата в тормозах".
+
