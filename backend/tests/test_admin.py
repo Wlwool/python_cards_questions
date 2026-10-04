@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from app.auth import create_token
 from app.models import Card
 from tests.conftest import make_card
@@ -105,3 +107,23 @@ class TestDeleteCard:
     def test_unknown_id_returns_404(self, client):
         response = client.delete(f"{URL}/999", headers=auth())
         assert response.status_code == 404
+
+    @pytest.mark.parametrize(
+        "field", ["question", "answer", "category", "tags", "difficulty"]
+    )
+    def test_null_for_required_field_rejected(self, client, db, field):
+        card = make_card(db)
+        response = client.put(
+            f"{URL}/{card.id}", json={field: None}, headers=auth()
+        )
+        assert response.status_code == 422
+        # карточка не испортилась и по-прежнему читается
+        assert client.get(f"/api/cards/{card.id}").status_code == 200
+
+    def test_null_code_example_clears_it(self, client, db):
+        card = make_card(db, code_example="print(1)")
+        response = client.put(
+            f"{URL}/{card.id}", json={"code_example": None}, headers=auth()
+        )
+        assert response.status_code == 200
+        assert response.json()["code_example"] is None
