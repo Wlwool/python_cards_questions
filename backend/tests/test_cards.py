@@ -115,6 +115,26 @@ class TestGetCards:
         assert response.status_code == 200
         assert response.json()["total"] == 2
 
+    def test_tags_filter_does_not_match_substring(self, client, db):
+        make_card(db, question="A", tags=json.dumps(["subset"]))
+        make_card(db, question="B", tags=json.dumps(["set"]))
+        response = client.get("/api/cards", params={"tags": "set"})
+
+        data = response.json()
+        assert response.status_code == 200
+        assert data["total"] == 1
+        assert data["items"][0]["question"] == "B"
+
+    def test_tags_filter_treats_underscore_literally(self, client, db):
+        make_card(db, question="A", tags=json.dumps(["a_b"]))
+        make_card(db, question="B", tags=json.dumps(["axb"]))
+        response = client.get("/api/cards", params={"tags": "a_b"})
+
+        data = response.json()
+        assert response.status_code == 200
+        assert data["total"] == 1
+        assert data["items"][0]["question"] == "A"
+
 
 class TestGetCardById:
     def test_returns_card(self, client, db):
