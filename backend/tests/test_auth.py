@@ -30,6 +30,11 @@ class TestLogin:
         assert response.status_code == 401
         assert response.json()["detail"] == "Wrong password"
 
+    def test_non_ascii_password_rejected_with_401(self, client):
+        response = client.post("/api/admin/login", json={"password": "пароль"})
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Wrong password"
+
 
 class TestVerifyToken:
     def test_no_token_rejected(self, client):

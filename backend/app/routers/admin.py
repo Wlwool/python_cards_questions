@@ -1,4 +1,5 @@
 import json
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -14,7 +15,12 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest):
-    if body.password != settings.admin_password:
+    # сравнение за постоянное время. Байты, потому что compare_digest
+    # не принимает строки с не-ASCII символами
+    password_ok = secrets.compare_digest(
+        body.password.encode(), settings.admin_password.encode()
+    )
+    if not password_ok:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password")
     return TokenResponse(access_token=create_token())
 
