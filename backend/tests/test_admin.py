@@ -89,25 +89,6 @@ class TestUpdateCard:
         response = client.put(f"{URL}/999", json={"question": "x"}, headers=auth())
         assert response.status_code == 404
 
-
-class TestDeleteCard:
-    def test_requires_auth(self, client, db):
-        card = make_card(db)
-        response = client.delete(f"{URL}/{card.id}")
-        assert response.status_code == 401
-        assert db.query(Card).count() == 1
-
-    def test_deletes_card(self, client, db):
-        card = make_card(db)
-        response = client.delete(f"{URL}/{card.id}", headers=auth())
-        assert response.status_code == 200
-        assert response.json() == {"ok": True}
-        assert client.get(f"/api/cards/{card.id}").status_code == 404
-
-    def test_unknown_id_returns_404(self, client):
-        response = client.delete(f"{URL}/999", headers=auth())
-        assert response.status_code == 404
-
     @pytest.mark.parametrize(
         "field", ["question", "answer", "category", "tags", "difficulty"]
     )
@@ -127,3 +108,22 @@ class TestDeleteCard:
         )
         assert response.status_code == 200
         assert response.json()["code_example"] is None
+
+
+class TestDeleteCard:
+    def test_requires_auth(self, client, db):
+        card = make_card(db)
+        response = client.delete(f"{URL}/{card.id}")
+        assert response.status_code == 401
+        assert db.query(Card).count() == 1
+
+    def test_deletes_card(self, client, db):
+        card = make_card(db)
+        response = client.delete(f"{URL}/{card.id}", headers=auth())
+        assert response.status_code == 200
+        assert response.json() == {"ok": True}
+        assert client.get(f"/api/cards/{card.id}").status_code == 404
+
+    def test_unknown_id_returns_404(self, client):
+        response = client.delete(f"{URL}/999", headers=auth())
+        assert response.status_code == 404
