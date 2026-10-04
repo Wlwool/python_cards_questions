@@ -1,7 +1,7 @@
 import json
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -67,7 +67,6 @@ def get_categories(db: Session = Depends(get_db)):
 
 @router.get("/{card_id}", response_model=CardResponse)
 def get_card(card_id: int, db: Session = Depends(get_db)):
-    from fastapi import HTTPException
     card = db.query(Card).filter(Card.id == card_id).first()
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")

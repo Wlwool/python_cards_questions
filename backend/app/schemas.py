@@ -26,6 +26,15 @@ class CardUpdate(BaseModel):
     tags: Optional[list[str]] = None
     difficulty: Optional[Literal["easy", "normal", "hard"]] = None
 
+    # Optional здесь означает - поле можно не передавать.
+    # Для code_example null оставлен допустимым.
+    @field_validator("question", "answer", "category", "tags", "difficulty")
+    @classmethod
+    def reject_null(cls, v):
+        if v is None:
+            raise ValueError("must not be null")
+        return v
+
 
 class CardResponse(CardBase):
     id: int
