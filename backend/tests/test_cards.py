@@ -106,6 +106,15 @@ class TestGetCards:
         data = client.get("/api/cards").json()
         assert isinstance(data["items"][0]["tags"], list)
 
+    def test_tags_filter_matches_any_tag(self, client, db):
+        make_card(db, question="A", tags=json.dumps(["list"]))
+        make_card(db, question="B", tags=json.dumps(["dict"]))
+        make_card(db, question="C", tags=json.dumps(["set"]))
+        response = client.get("/api/cards", params={"tags": "list,dict"})
+
+        assert response.status_code == 200
+        assert response.json()["total"] == 2
+
 
 class TestGetCardById:
     def test_returns_card(self, client, db):
