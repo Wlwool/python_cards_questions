@@ -38,8 +38,9 @@ def get_cards(
 
     if tags:
         # фильтрует карточки содержащие хотя бы один из переданных тегов
-        for tag in tags.split(","):
-            query = query.filter(Card.tags.contains(tag.strip()))
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        if tag_list:
+            query = query.filter(or_(*(Card.tags.contains(t) for t in tag_list)))
 
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
