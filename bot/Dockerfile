@@ -12,5 +12,5 @@ RUN uv sync --frozen --no-dev
 
 COPY . .
 
-CMD ["sh", "-c", "mkdir -p /app/data && uv run --no-sync python main.py"]
+CMD ["sh", "-c", "mkdir -p /app/data && exec uv run --no-sync python main.py"]
 

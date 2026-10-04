@@ -11,4 +11,4 @@ COPY . .
 
 RUN mkdir -p /app/data
 
-CMD ["sh", "-c", "mkdir -p /app/data && uv run --no-sync uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "mkdir -p /app/data && exec uv run --no-sync uvicorn app.main:app --host 0.0.0.0 --port 8000"]
