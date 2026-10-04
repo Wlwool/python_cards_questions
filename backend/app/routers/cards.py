@@ -37,10 +37,21 @@ def get_cards(
         query = query.filter(Card.difficulty == difficulty)
 
     if tags:
-        # фильтрует карточки содержащие хотя бы один из переданных тегов
+        # фильтрует карточки содержащие хотя бы один из переданных тегов;
+        # тег ищет вместе с кавычками ("set"), чтобы не находить "subset";
+        # autoescape отключает спецсимволы LIKE (% и _) внутри тега
         tag_list = [t.strip() for t in tags.split(",") if t.strip()]
         if tag_list:
-            query = query.filter(or_(*(Card.tags.contains(t) for t in tag_list)))
+            query = query.filter(
+                or_(
+                    *(
+                        Card.tags.contains(
+                            json.dumps(t, ensure_ascii=False), autoescape=True
+                        )
+                        for t in tag_list
+                    )
+                )
+            )
 
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
