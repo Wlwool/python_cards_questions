@@ -3,8 +3,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    admin_password: str = "7788"
-    secret_key: str = "5"
+    admin_password: str
+    secret_key: str
     database_url: str = "sqlite:///./data/cards.db"
     token_expire_hours: int = 24
     model_config = ConfigDict(env_file="../.env", extra="ignore")
