@@ -47,7 +47,7 @@ class TestVerifyToken:
         assert response.json()["detail"] == "Token expired"
 
     def test_token_signed_with_other_key_rejected(self, client):
-        token = make_jwt(key="some-other-secret-key")
+        token = make_jwt(key="some-other-secret-key-with-32-plus-characters")
         response = client.delete(CARD_URL, headers=auth_headers(token))
         assert response.status_code == 401
         assert response.json()["detail"] == "Invalid token"
