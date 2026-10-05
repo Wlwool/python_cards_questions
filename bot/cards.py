@@ -5,6 +5,10 @@ from sqlalchemy.orm import Session
 from config import settings
 from models import Card
 
+_CODE_FENCE_OPEN = "```python\n"
+_CODE_FENCE_CLOSE = "\n```"
+_PRE_OPEN = '<pre><code class="language-python">'
+_PRE_CLOSE = "</code></pre>"
 
 def _difficulty_emoji(difficulty: str) -> str:
     return {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(difficulty, "⚪")
@@ -42,10 +46,34 @@ def format_card(card: Card) -> list[str]:
     parts = _split_telegram(text)
 
     if card.code_example:
-        for code_part in _split_telegram(card.code_example, limit=4000):
-            parts.append(
-                f"<pre><code class=\"language-python\">{escape(code_part)}</code></pre>"
-            )
+        for code_part in _split_code_telegram(card.code_example):
+            parts.append(f"{_PRE_OPEN}{escape(code_part)}{_PRE_CLOSE}")
+    return parts
+
+
+def _split_code_telegram(code: str, limit: int = 4096) -> list[str]:
+    """Режет код так, чтобы после escape и обёртки <pre><code> сообщение влезло в limit.
+    Режет по последнему переводу строки, отступы следующего куска не трогает.
+    """
+    budget = limit - len(_PRE_OPEN) - len(_PRE_CLOSE)
+    parts: list[str] = []
+    while code:
+        used = 0
+        end = 0
+        for ch in code:
+            size = len(escape(ch))
+            if used + size > budget:
+                break
+            used += size
+            end += 1
+        else:
+            parts.append(code)
+            break
+        cut = code.rfind("\n", 0, end)
+        if cut <= 0:
+            cut = end
+        parts.append(code[:cut])
+        code = code[cut:].lstrip("\n")
     return parts
 
 def _split_telegram(text: str, limit: int = 4096) -> list[str]:
@@ -87,15 +115,14 @@ def format_card_discord(card: Card) -> list[str]:
 def _append_discord_code(code: str, parts: list[str]) -> None:
     """Оборачивает код в ```python блок, разбивая если нужно."""
     limit = settings.discord_max_length
-    # 12 = len("```python\n") + len("\n```")
-    chunk_limit = limit - 12
+    chunk_limit = limit - len(_CODE_FENCE_OPEN) - len(_CODE_FENCE_CLOSE)
 
     if len(code) <= chunk_limit:
-        parts.append(f"```python\n{code}\n```")
+        parts.append(f"{_CODE_FENCE_OPEN}{code}{_CODE_FENCE_CLOSE}")
         return
 
     for chunk in _split_discord(code, limit=chunk_limit):
-        parts.append(f"```python\n{chunk}\n```")
+        parts.append(f"{_CODE_FENCE_OPEN}{chunk}{_CODE_FENCE_CLOSE}")
 
 
 def _split_discord(text: str, limit: int | None = None) -> list[str]:

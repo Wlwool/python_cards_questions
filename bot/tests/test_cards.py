@@ -1,4 +1,14 @@
 import json
+from cards import (
+    _PRE_CLOSE,
+    _PRE_OPEN,
+    _split_telegram,
+    format_card,
+    format_card_discord,
+    get_next_cards,
+    get_random_card,
+)
+from html import unescape
 from unittest.mock import MagicMock
 
 import pytest
@@ -7,7 +17,14 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cards import _split_telegram, format_card, get_next_cards, get_random_card
+from cards import (
+    _split_telegram,
+    format_card,
+    format_card_discord,
+    get_next_cards,
+    get_random_card,
+)
+from config import settings
 from models import Card
 
 
@@ -125,6 +142,24 @@ class TestFormatCard:
         assert "&gt;" in full
         assert "&amp;" in full
 
+    def test_code_parts_within_limit_after_escape(self):
+        """Код с символами < > & после escape и обёртки не длиннее 4096."""
+        card = make_card(code_example="<" * 5000)
+        result = format_card(card)
+        assert all(len(part) <= 4096 for part in result)
+
+    def test_code_parts_preserve_code(self):
+        """Склейка кусков кода даёт исходный код."""
+        code = "\n".join(f"    if a < {i} and b > {i}: pass" for i in range(400))
+        card = make_card(code_example=code)
+        code_parts = format_card(card)[1:]
+        restored = "".join(
+            unescape(p.removeprefix(_PRE_OPEN).removesuffix(_PRE_CLOSE))
+            for p in code_parts
+        )
+        assert len(code_parts) > 1
+        assert restored.replace("\n", "") == code.replace("\n", "")
+
 
 class TestGetNextCards:
     def test_returns_requested_count(self):
@@ -164,3 +199,10 @@ class TestGetRandomCard:
         db.query().all.return_value = []
         result = get_random_card(db)
         assert result is None
+
+class TestFormatCardDiscord:
+    def test_long_code_parts_within_discord_limit(self):
+        """Каждое сообщение вместе с обёрткой ```python не длиннее лимита Discord."""
+        card = make_card(code_example="x" * 5000)
+        result = format_card_discord(card)
+        assert all(len(part) <= settings.discord_max_length for part in result)
