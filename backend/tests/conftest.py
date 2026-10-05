@@ -35,6 +35,7 @@ def db():
     finally:
         db.close()
         Base.metadata.drop_all(bind=engine)
+        engine.dispose()
         app.dependency_overrides.clear()
 
 
