@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from config import settings
 from models import Card
 
+_CODE_FENCE_OPEN = "```python\n"
+_CODE_FENCE_CLOSE = "\n```"
 
 def _difficulty_emoji(difficulty: str) -> str:
     return {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(difficulty, "⚪")
@@ -87,15 +89,14 @@ def format_card_discord(card: Card) -> list[str]:
 def _append_discord_code(code: str, parts: list[str]) -> None:
     """Оборачивает код в ```python блок, разбивая если нужно."""
     limit = settings.discord_max_length
-    # 12 = len("```python\n") + len("\n```")
-    chunk_limit = limit - 12
+    chunk_limit = limit - len(_CODE_FENCE_OPEN) - len(_CODE_FENCE_CLOSE)
 
     if len(code) <= chunk_limit:
-        parts.append(f"```python\n{code}\n```")
+        parts.append(f"{_CODE_FENCE_OPEN}{code}{_CODE_FENCE_CLOSE}")
         return
 
     for chunk in _split_discord(code, limit=chunk_limit):
-        parts.append(f"```python\n{chunk}\n```")
+        parts.append(f"{_CODE_FENCE_OPEN}{chunk}{_CODE_FENCE_CLOSE}")
 
 
 def _split_discord(text: str, limit: int | None = None) -> list[str]:

@@ -7,7 +7,14 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cards import _split_telegram, format_card, get_next_cards, get_random_card
+from cards import (
+    _split_telegram,
+    format_card,
+    format_card_discord,
+    get_next_cards,
+    get_random_card,
+)
+from config import settings
 from models import Card
 
 
@@ -164,3 +171,10 @@ class TestGetRandomCard:
         db.query().all.return_value = []
         result = get_random_card(db)
         assert result is None
+
+class TestFormatCardDiscord:
+    def test_long_code_parts_within_discord_limit(self):
+        """Каждое сообщение вместе с обёрткой ```python не длиннее лимита Discord."""
+        card = make_card(code_example="x" * 5000)
+        result = format_card_discord(card)
+        assert all(len(part) <= settings.discord_max_length for part in result)
