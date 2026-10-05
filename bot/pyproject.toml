@@ -3,10 +3,14 @@ name = "python-cards-bot"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "aiogram~=3.24.0",
-    "aiohttp~=3.13.5",
-    "apscheduler~=3.11.2",
+    "aiogram~=3.31.0",
+    "aiohttp~=3.14.3",
+    "apscheduler~=3.11.3",
     "sqlalchemy==2.0.46",
     "python-dotenv>=1.1.1",
+]
+
+[dependency-groups]
+dev = [
     "pytest>=8.0.0",
 ]
