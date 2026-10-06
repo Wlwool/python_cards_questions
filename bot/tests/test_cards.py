@@ -9,7 +9,7 @@ import pytest
 from cards import (
     _PRE_CLOSE,
     _PRE_OPEN,
-    _split_telegram,
+    _split_text,
     format_card,
     format_card_discord,
     get_next_cards,
@@ -45,29 +45,32 @@ def make_card(**kwargs) -> Card:
 class TestSplitMessage:
     def test_short_message_not_split(self):
         text = "короткое сообщение"
-        assert _split_telegram(text) == [text]
+        assert _split_text(text, 4096) == [text]
 
     def test_long_message_split(self):
         text = "а" * 5000
-        parts = _split_telegram(text)
+        parts = _split_text(text, 4096)
         assert len(parts) > 1
         assert all(len(p) <= 4096 for p in parts)
 
     def test_split_preserves_content(self):
-        text = "слово " * 1000
-        parts = _split_telegram(text)
-        assert "".join(parts).replace(" ", "") == text.replace(" ", "")
+        text = "\n".join(f"строка {i}" for i in range(1000))
+        parts = _split_text(text, limit=500)
+        assert len(parts) > 1
+        assert "\n".join(parts) == text
 
     def test_exact_limit_not_split(self):
         text = "а" * 4096
-        assert _split_telegram(text) == [text]
+        assert _split_text(text, 4096) == [text]
 
     def test_split_prefers_newline(self):
-        line = "а" * 100 + "\n"
-        text = line * 50
-        parts = _split_telegram(text, limit=512)
+        line = "а" * 100
+        text = (line + "\n") * 50
+        parts = _split_text(text, limit=512)
+        assert len(parts) > 1
+        assert all(len(part) <= 512 for part in parts)
         for part in parts:
-            assert len(part) <= 512
+            assert all(item == line for item in part.split("\n") if item)
 
 
 class TestFormatCard:
