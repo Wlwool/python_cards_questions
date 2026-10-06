@@ -85,6 +85,7 @@ class TestPostRateLimit:
         assert asyncio.run(sender._post("x")) is True
         assert sleeps == [5]
 
+
 class TestWithoutWebhook:
     def test_empty_url_does_not_raise(self):
         sender = DiscordSender("")
