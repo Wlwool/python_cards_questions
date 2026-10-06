@@ -1,4 +1,5 @@
 import json
+import logging
 import random
 from html import escape
 
@@ -6,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from models import Card
+
+log = logging.getLogger(__name__)
 
 _CODE_FENCE_OPEN = "```python\n"
 _CODE_FENCE_CLOSE = "\n```"
@@ -15,6 +18,19 @@ _PRE_CLOSE = "</code></pre>"
 
 def _difficulty_emoji(difficulty: str) -> str:
     return {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(difficulty, "⚪")
+
+
+def _parse_tags(card: Card) -> list[str]:
+    """Разбирает теги карточки. Битые или неожиданные данные дают пустой список."""
+    try:
+        tags = json.loads(card.tags or "[]")
+    except (ValueError, TypeError):
+        log.warning(f"Карточка id={card.id}: теги не разобрать как JSON, пропуск")
+        return []
+    if not isinstance(tags, list) or not all(isinstance(t, str) for t in tags):
+        log.warning(f"Карточка id={card.id}: теги не список строк, пропуск")
+        return []
+    return tags
 
 
 def get_next_cards(db: Session, count: int, last_id: int = 0) -> list[Card]:
@@ -46,7 +62,7 @@ def format_card(card: Card) -> list[str]:
         f"{escape(card.answer)}"
     )
 
-    tags = json.loads(card.tags or "[]")
+    tags = _parse_tags(card)
     if tags:
         tags_line = " ".join(f"<code>{escape(t)}</code>" for t in tags)
         text += f"\n\n🏷 {tags_line}"
@@ -111,7 +127,7 @@ def format_card_discord(card: Card) -> list[str]:
         f"{card.answer}\n"
     )
 
-    tags = json.loads(card.tags or "[]")
+    tags = _parse_tags(card)
     if tags:
         text += "\n\n🏷 " + " ".join(f"`{t}`" for t in tags)
 

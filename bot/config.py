@@ -31,6 +31,15 @@ def _parse_admin_ids(raw: str) -> list[int]:
     return ids
 
 
+def _check_delivery_channels(telegram_enabled: bool, discord_webhook_url: str) -> None:
+    """Бот должен куда-то отправлять карточки: нужен Telegram или Discord."""
+    if not telegram_enabled and not discord_webhook_url.strip():
+        raise RuntimeError(
+            "Некуда отправлять карточки: TELEGRAM_ENABLED=false и "
+            "DISCORD_WEBHOOK_URL не задан"
+        )
+
+
 class Settings:
     bot_token: str = _require("BOT_TOKEN")
     admin_ids: list[int] = _parse_admin_ids(_require("ADMIN_IDS"))
@@ -48,3 +57,4 @@ class Settings:
 
 
 settings = Settings()
+_check_delivery_channels(settings.telegram_enabled, settings.discord_webhook_url)

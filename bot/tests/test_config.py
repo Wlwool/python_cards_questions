@@ -35,3 +35,19 @@ class TestParseAdminIds:
     def test_invalid_rejected_with_name(self, raw):
         with pytest.raises(RuntimeError, match="ADMIN_IDS"):
             config._parse_admin_ids(raw)
+
+
+class TestCheckDeliveryChannels:
+    def test_telegram_only_ok(self):
+        config._check_delivery_channels(True, "")
+
+    def test_discord_only_ok(self):
+        config._check_delivery_channels(False, "https://example.test/webhook")
+
+    def test_both_ok(self):
+        config._check_delivery_channels(True, "https://example.test/webhook")
+
+    @pytest.mark.parametrize("url", ["", "   "])
+    def test_no_channels_rejected(self, url):
+        with pytest.raises(RuntimeError, match="DISCORD_WEBHOOK_URL"):
+            config._check_delivery_channels(False, url)
