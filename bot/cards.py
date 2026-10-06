@@ -1,8 +1,8 @@
 import json
 import logging
-import random
 from html import escape
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -47,10 +47,7 @@ def get_next_cards(db: Session, count: int, last_id: int = 0) -> list[Card]:
 
 
 def get_random_card(db: Session) -> Card | None:
-    cards = db.query(Card).all()
-    if not cards:
-        return None
-    return random.choice(cards)
+    return db.query(Card).order_by(func.random()).first()
 
 
 def format_card(card: Card) -> list[str]:

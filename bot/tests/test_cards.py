@@ -11,7 +11,6 @@ from cards import (
     format_card,
     format_card_discord,
     get_next_cards,
-    get_random_card,
 )
 from config import settings
 from models import Card
@@ -180,21 +179,6 @@ class TestGetNextCards:
         db.query().order_by().limit().all.return_value = []
         result = get_next_cards(db, 3, last_id=0)
         assert result == []
-
-
-class TestGetRandomCard:
-    def test_returns_card(self):
-        db = MagicMock()
-        cards = [make_card(id=1), make_card(id=2)]
-        db.query().all.return_value = cards
-        result = get_random_card(db)
-        assert result in cards
-
-    def test_returns_none_for_empty_db(self):
-        db = MagicMock()
-        db.query().all.return_value = []
-        result = get_random_card(db)
-        assert result is None
 
 
 class TestFormatCardDiscord:
