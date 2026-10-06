@@ -1,6 +1,4 @@
 import json
-import os
-import sys
 from html import unescape
 from unittest.mock import MagicMock
 
@@ -15,9 +13,6 @@ from cards import (
     get_next_cards,
     get_random_card,
 )
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from config import settings
 from models import Card
 

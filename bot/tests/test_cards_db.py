@@ -1,12 +1,7 @@
-import os
-import sys
-
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from cards import get_next_cards
 from models import Card
