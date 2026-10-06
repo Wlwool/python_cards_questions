@@ -1,14 +1,9 @@
-import os
-import sys
-
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from cards import get_next_cards
+from cards import get_next_cards, get_random_card
 from models import Card
 
 
@@ -61,3 +56,26 @@ class TestGetNextCardsRealDb:
 
     def test_empty_db_returns_empty(self, db):
         assert get_next_cards(db, 3, last_id=0) == []
+
+
+class TestGetRandomCardRealDb:
+    def test_returns_one_of_the_cards(self, db):
+        add_cards(db, 3)
+        assert get_random_card(db).id in {1, 2, 3}
+
+    def test_empty_db_returns_none(self, db):
+        assert get_random_card(db) is None
+
+    def test_selects_single_row_in_sql(self, db):
+        add_cards(db, 5)
+        statements: list[str] = []
+        event.listen(
+            db.get_bind(),
+            "before_cursor_execute",
+            lambda conn, cursor, statement, params, context, many: statements.append(
+                statement
+            ),
+        )
+        get_random_card(db)
+        assert len(statements) == 1
+        assert "LIMIT" in statements[0].upper()

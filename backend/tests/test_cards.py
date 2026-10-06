@@ -140,6 +140,15 @@ class TestGetCards:
         assert data["total"] == 1
         assert data["items"][0]["question"] == "A"
 
+    def test_per_page_zero_rejected(self, client, db):
+        assert client.get("/api/cards?per_page=0").status_code == 422
+
+    def test_per_page_above_limit_rejected(self, client, db):
+        assert client.get("/api/cards?per_page=501").status_code == 422
+
+    def test_per_page_at_limit_accepted(self, client, db):
+        assert client.get("/api/cards?per_page=500").status_code == 200
+
 
 class TestGetCardById:
     def test_returns_card(self, client, db):
@@ -158,6 +167,9 @@ class TestGetCardById:
         card = make_card(db)
         data = client.get(f"/api/cards/{card.id}").json()
         assert data["id"] == card.id
+
+    def test_unknown_id_returns_404(self, client, db):
+        assert client.get("/api/cards/999").status_code == 404
 
 
 class TestGetCategories:

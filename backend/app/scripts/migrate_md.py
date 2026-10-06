@@ -23,8 +23,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.database import SessionLocal, engine
 from app.models import Base, Card
 
-Base.metadata.create_all(bind=engine)
-
 
 def parse_cards(text: str) -> list[dict]:
     cards = []
@@ -111,6 +109,92 @@ def parse_cards(text: str) -> list[dict]:
     return cards
 
 
+def find_unclosed_code(text: str) -> list[str]:
+    """Ищет незакрытые блоки кода и вопросы, потерянные из-за них.
+    Это эвристика: ограда с языком внутри блока считается началом нового блока.
+    """
+    warnings: list[str] = []
+    category = "General"
+    question = None
+    in_code = False
+    code_owner: tuple[str | None, str] = (None, category)
+    lost: list[str] = []
+
+    def report_unclosed() -> None:
+        q, c = code_owner
+        warnings.append(
+            f'Незакрытый блок кода в вопросе "{q or "?"}" (категория "{c}"): '
+            "проверьте карточку"
+        )
+        warnings.extend(
+            f'Заголовок "{title}" внутри незакрытого блока: карточка не будет создана'
+            for title in lost
+        )
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            if not in_code:
+                in_code = True
+                code_owner = (question, category)
+            elif len(stripped) > 3:
+                report_unclosed()
+                code_owner = (question, category)
+            else:
+                in_code = False
+            lost = []
+            continue
+
+        header = re.match(r"^(#{1,6})\s+(.+)$", line)
+        if in_code:
+            if header and len(header.group(1)) >= 3:
+                lost.append(header.group(2).strip())
+            continue
+
+        if header:
+            title = header.group(2).strip()
+            if len(header.group(1)) <= 2:
+                category = title
+                question = None
+            else:
+                question = title
+
+    if in_code:
+        report_unclosed()
+    return warnings
+
+
+def import_cards(db, cards_data: list[dict]) -> tuple[int, int]:
+    """Добавляет карточки в БД, пропуская дубли по паре (вопрос, категория).
+    Возвращает (добавлено, пропущено как дубли).
+    Карточки с пустым вопросом или ответом не считаются ни добавленными, ни дублями.
+    """
+    seen = set(db.query(Card.question, Card.category).all())
+    inserted = 0
+    skipped = 0
+    for data in cards_data:
+        if not data["question"] or not data["answer"]:
+            continue
+        key = (data["question"], data["category"])
+        if key in seen:
+            skipped += 1
+            continue
+        seen.add(key)
+        db.add(
+            Card(
+                question=data["question"],
+                answer=data["answer"],
+                code_example=data["code_example"],
+                category=data["category"],
+                tags=json.dumps(data["tags"], ensure_ascii=False),
+                difficulty=data["difficulty"],
+            )
+        )
+        inserted += 1
+    db.commit()
+    return inserted, skipped
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", required=True, help="Path to questions.md")
@@ -122,9 +206,13 @@ def main():
     with open(args.file, encoding="utf-8") as f:
         text = f.read()
 
+    for warning in find_unclosed_code(text):
+        print(f"ВНИМАНИЕ: {warning}")
+
     cards_data = parse_cards(text)
     print(f"Найдено карточек: {len(cards_data)}")
 
+    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         if args.clear:
@@ -132,23 +220,8 @@ def main():
             db.commit()
             print("Старые карточки удалены")
 
-        inserted = 0
-        for data in cards_data:
-            if not data["question"] or not data["answer"]:
-                continue
-            card = Card(
-                question=data["question"],
-                answer=data["answer"],
-                code_example=data["code_example"],
-                category=data["category"],
-                tags=json.dumps(data["tags"], ensure_ascii=False),
-                difficulty=data["difficulty"],
-            )
-            db.add(card)
-            inserted += 1
-
-        db.commit()
-        print(f"Импортировано: {inserted} карточек")
+        inserted, skipped = import_cards(db, cards_data)
+        print(f"Импортировано: {inserted} карточек, пропущено дублей: {skipped}")
     finally:
         db.close()
 
