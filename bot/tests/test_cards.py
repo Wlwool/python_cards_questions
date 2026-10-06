@@ -1,4 +1,9 @@
 import json
+import os
+import sys
+from html import unescape
+from unittest.mock import MagicMock
+
 from cards import (
     _PRE_CLOSE,
     _PRE_OPEN,
@@ -8,22 +13,9 @@ from cards import (
     get_next_cards,
     get_random_card,
 )
-from html import unescape
-from unittest.mock import MagicMock
-
-import pytest
-import sys
-import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cards import (
-    _split_telegram,
-    format_card,
-    format_card_discord,
-    get_next_cards,
-    get_random_card,
-)
 from config import settings
 from models import Card
 

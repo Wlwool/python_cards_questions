@@ -1,7 +1,7 @@
 import asyncio
 import logging
+from datetime import UTC, datetime, timedelta
 
-from datetime import datetime, timedelta, timezone
 from aiogram import Bot, Dispatcher, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
@@ -121,7 +121,7 @@ async def _send_tg_to_all(card) -> None:
 
 def _schedule_retry(scheduler: AsyncIOScheduler, discord: DiscordSender) -> None:
     """Планирует повторную попытку отправки через 15 мин."""
-    run_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    run_at = datetime.now(UTC) + timedelta(minutes=15)
     scheduler.add_job(
         send_scheduled_cards,
         trigger="date",

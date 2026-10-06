@@ -1,7 +1,9 @@
 import json
 import random
 from html import escape
+
 from sqlalchemy.orm import Session
+
 from config import settings
 from models import Card
 

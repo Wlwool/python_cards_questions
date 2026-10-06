@@ -1,7 +1,8 @@
 import asyncio
-import aiohttp
 import logging
-from typing import Optional
+
+import aiohttp
+
 from config import settings
 
 log = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class DiscordSender:
         if not webhook_url:
             raise ValueError("Discord webhook URL не задан")
         self.webhook_url = webhook_url
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
 
     async def start(self) -> None:
         self.session = aiohttp.ClientSession(
@@ -66,7 +67,7 @@ class DiscordSender:
                     log.warning(
                         f"Discord: rate limit, попытка {attempt}/{_MAX_ATTEMPTS}, "
                         f"повтор через {delay} сек")
-            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            except (TimeoutError, aiohttp.ClientError) as e:
                 log.warning(
                     f"Discord: ошибка сети, попытка {attempt}/{_MAX_ATTEMPTS}: {e}")
 
