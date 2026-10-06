@@ -108,7 +108,9 @@ class TestFormatCard:
     def test_no_code_example(self):
         card = make_card(code_example=None)
         result = format_card(card)
-        assert any("list" in part.lower() or "последовательность" in part for part in result)
+        assert any(
+            "list" in part.lower() or "последовательность" in part for part in result
+        )
 
     def test_code_example_none_no_pre_tag(self):
         card = make_card(code_example=None)
@@ -191,6 +193,7 @@ class TestGetRandomCard:
         db.query().all.return_value = []
         result = get_random_card(db)
         assert result is None
+
 
 class TestFormatCardDiscord:
     def test_long_code_parts_within_discord_limit(self):

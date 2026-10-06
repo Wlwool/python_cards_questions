@@ -14,10 +14,11 @@ from database import SessionLocal
 from discord_sender import DiscordSender
 from state import load_last_id, save_last_id
 
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-                    datefmt="%d-%m-%Y %H:%M:%S",
-                    )
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%d-%m-%Y %H:%M:%S",
+)
 log = logging.getLogger(__name__)
 
 bot = Bot(token=settings.bot_token)
@@ -40,7 +41,9 @@ async def send_card_to_telegram(chat_id: int, card) -> None:
                 await bot.send_message(chat_id, part, parse_mode="HTML")
                 break
             except TelegramBadRequest as e:
-                log.error(f"Telegram BadRequest карточка id={card.id} чат {chat_id}: {e}")
+                log.error(
+                    f"Telegram BadRequest карточка id={card.id} чат {chat_id}: {e}"
+                )
                 break
             except asyncio.CancelledError:
                 raise
@@ -55,7 +58,9 @@ async def send_card_to_telegram(chat_id: int, card) -> None:
                 await asyncio.sleep(delay)
 
 
-async def send_scheduled_cards(scheduler: AsyncIOScheduler, discord: DiscordSender) -> None:
+async def send_scheduled_cards(
+    scheduler: AsyncIOScheduler, discord: DiscordSender
+) -> None:
     """Отправляет серию карточек по расписанию всем пользователям.
     При провале повторно отправляет через 15 минут.
     # Discord и Telegram запускаются параллельно. Discord приоритетен
@@ -84,18 +89,21 @@ async def send_scheduled_cards(scheduler: AsyncIOScheduler, discord: DiscordSend
                     tg_task = asyncio.create_task(_send_tg_to_all(card))
 
                     discord_result, tg_result = await asyncio.gather(
-                        discord_task, tg_task, return_exceptions=True)
+                        discord_task, tg_task, return_exceptions=True
+                    )
 
                     if isinstance(discord_result, Exception):
                         log.error(
-                            f"Discord: исключение карточка id={card.id}: {discord_result}")
+                            f"Discord: исключение карточка id={card.id}: {discord_result}"
+                        )
                     elif not discord_result:
                         log.error(f"Discord: ошибка отправки карточка id={card.id}")
 
                     if isinstance(tg_result, Exception):
                         log.error(
                             f"Telegram: все попытки исчерпаны карточка id={card.id}: {tg_result}. "
-                            f"Повтор сессии через 15 минут.")
+                            f"Повтор сессии через 15 минут."
+                        )
                         save_last_id(last_sent_id)
                         _schedule_retry(scheduler, discord)
                         return
@@ -112,6 +120,7 @@ async def send_scheduled_cards(scheduler: AsyncIOScheduler, discord: DiscordSend
             log.info(f"Отправлено {len(cards)} карточек, последний id: {cards[-1].id}")
         finally:
             db.close()
+
 
 async def _send_tg_to_all(card) -> None:
     """Отправляет карточку всем admin_ids в Telegram."""
@@ -178,7 +187,7 @@ async def main() -> None:
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         send_scheduled_cards,
-        trigger="cron", # interval
+        trigger="cron",  # interval
         hour="7,12,17,22",
         # hours=settings.schedule_interval_hours,
         args=[scheduler, discord],
@@ -200,7 +209,8 @@ async def main() -> None:
             await _run_polling()
         else:
             log.info(
-                "Telegram отключён (TELEGRAM_ENABLED=false), работает только Discord")
+                "Telegram отключён (TELEGRAM_ENABLED=false), работает только Discord"
+            )
             await asyncio.Event().wait()
     finally:
         await discord.stop()

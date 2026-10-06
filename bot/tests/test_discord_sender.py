@@ -11,6 +11,7 @@ from discord_sender import _MAX_ATTEMPTS, DiscordSender
 
 class FakeResponse:
     """Подменяет ответ aiohttp: статус, json() и text()."""
+
     def __init__(self, status, body=None, json_error=False):
         self.status = status
         self._body = body if body is not None else {}
@@ -33,6 +34,7 @@ class FakeResponse:
 
 class FakeSession:
     """Отдаёт ответы по очереди; последний повторяется бесконечно."""
+
     closed = False
 
     def __init__(self, responses):
