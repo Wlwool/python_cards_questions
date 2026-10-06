@@ -111,6 +111,37 @@ def parse_cards(text: str) -> list[dict]:
     return cards
 
 
+def import_cards(db, cards_data: list[dict]) -> tuple[int, int]:
+    """Добавляет карточки в БД, пропуская дубли по паре (вопрос, категория).
+    Возвращает (добавлено, пропущено как дубли).
+    Карточки с пустым вопросом или ответом не считаются ни добавленными, ни дублями.
+    """
+    seen = set(db.query(Card.question, Card.category).all())
+    inserted = 0
+    skipped = 0
+    for data in cards_data:
+        if not data["question"] or not data["answer"]:
+            continue
+        key = (data["question"], data["category"])
+        if key in seen:
+            skipped += 1
+            continue
+        seen.add(key)
+        db.add(
+            Card(
+                question=data["question"],
+                answer=data["answer"],
+                code_example=data["code_example"],
+                category=data["category"],
+                tags=json.dumps(data["tags"], ensure_ascii=False),
+                difficulty=data["difficulty"],
+            )
+        )
+        inserted += 1
+    db.commit()
+    return inserted, skipped
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", required=True, help="Path to questions.md")
@@ -132,23 +163,8 @@ def main():
             db.commit()
             print("Старые карточки удалены")
 
-        inserted = 0
-        for data in cards_data:
-            if not data["question"] or not data["answer"]:
-                continue
-            card = Card(
-                question=data["question"],
-                answer=data["answer"],
-                code_example=data["code_example"],
-                category=data["category"],
-                tags=json.dumps(data["tags"], ensure_ascii=False),
-                difficulty=data["difficulty"],
-            )
-            db.add(card)
-            inserted += 1
-
-        db.commit()
-        print(f"Импортировано: {inserted} карточек")
+        inserted, skipped = import_cards(db, cards_data)
+        print(f"Импортировано: {inserted} карточек, пропущено дублей: {skipped}")
     finally:
         db.close()
 

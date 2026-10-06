@@ -1,8 +1,22 @@
+from app.models import Card
+from app.scripts import migrate_md
 from app.scripts.migrate_md import parse_cards
+from tests.conftest import make_card
 
 
 def md(*lines: str) -> str:
     return "\n".join(lines)
+
+
+def card_data(question: str, category: str = "Python", answer: str = "Ответ.") -> dict:
+    return {
+        "question": question,
+        "answer": answer,
+        "code_example": None,
+        "category": category,
+        "tags": [],
+        "difficulty": "normal",
+    }
 
 
 class TestParseCards:
@@ -72,3 +86,34 @@ class TestParseCards:
         cards = parse_cards(md("### Q", "текст", "```python", "# комментарий", "```"))
         assert len(cards) == 1
         assert cards[0]["code_example"] == "# комментарий"
+
+
+class TestImportCards:
+    def test_inserts_new_cards(self, db):
+        result = migrate_md.import_cards(db, [card_data("Q1"), card_data("Q2")])
+        assert result == (2, 0)
+        assert db.query(Card).count() == 2
+
+    def test_second_run_skips_duplicates(self, db):
+        data = [card_data("Q1"), card_data("Q2")]
+        migrate_md.import_cards(db, data)
+        assert migrate_md.import_cards(db, data) == (0, 2)
+        assert db.query(Card).count() == 2
+
+    def test_existing_card_in_db_skipped(self, db):
+        make_card(db, question="Q", category="Python")
+        assert migrate_md.import_cards(db, [card_data("Q")]) == (0, 1)
+        assert db.query(Card).count() == 1
+
+    def test_same_question_in_other_category_is_not_duplicate(self, db):
+        data = [card_data("Q", "Python"), card_data("Q", "Django")]
+        assert migrate_md.import_cards(db, data) == (2, 0)
+
+    def test_duplicates_inside_file_skipped(self, db):
+        assert migrate_md.import_cards(db, [card_data("Q"), card_data("Q")]) == (1, 1)
+        assert db.query(Card).count() == 1
+
+    def test_empty_question_or_answer_not_imported(self, db):
+        data = [card_data(""), card_data("Q", answer="")]
+        assert migrate_md.import_cards(db, data) == (0, 0)
+        assert db.query(Card).count() == 0
