@@ -111,6 +111,61 @@ def parse_cards(text: str) -> list[dict]:
     return cards
 
 
+def find_unclosed_code(text: str) -> list[str]:
+    """Ищет незакрытые блоки кода и вопросы, потерянные из-за них.
+    Это эвристика: ограда с языком внутри блока считается началом нового блока.
+    """
+    warnings: list[str] = []
+    category = "General"
+    question = None
+    in_code = False
+    code_owner: tuple[str | None, str] = (None, category)
+    lost: list[str] = []
+
+    def report_unclosed() -> None:
+        q, c = code_owner
+        warnings.append(
+            f'Незакрытый блок кода в вопросе "{q or "?"}" (категория "{c}"): '
+            "проверьте карточку"
+        )
+        warnings.extend(
+            f'Заголовок "{title}" внутри незакрытого блока: карточка не будет создана'
+            for title in lost
+        )
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            if not in_code:
+                in_code = True
+                code_owner = (question, category)
+            elif len(stripped) > 3:
+                report_unclosed()
+                code_owner = (question, category)
+            else:
+                in_code = False
+            lost = []
+            continue
+
+        header = re.match(r"^(#{1,6})\s+(.+)$", line)
+        if in_code:
+            if header and len(header.group(1)) >= 3:
+                lost.append(header.group(2).strip())
+            continue
+
+        if header:
+            title = header.group(2).strip()
+            if len(header.group(1)) <= 2:
+                category = title
+                question = None
+            else:
+                question = title
+
+    if in_code:
+        report_unclosed()
+    return warnings
+
+
 def import_cards(db, cards_data: list[dict]) -> tuple[int, int]:
     """Добавляет карточки в БД, пропуская дубли по паре (вопрос, категория).
     Возвращает (добавлено, пропущено как дубли).
@@ -152,6 +207,9 @@ def main():
 
     with open(args.file, encoding="utf-8") as f:
         text = f.read()
+
+    for warning in find_unclosed_code(text):
+        print(f"ВНИМАНИЕ: {warning}")
 
     cards_data = parse_cards(text)
     print(f"Найдено карточек: {len(cards_data)}")

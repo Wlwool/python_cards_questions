@@ -117,3 +117,53 @@ class TestImportCards:
         data = [card_data(""), card_data("Q", answer="")]
         assert migrate_md.import_cards(db, data) == (0, 0)
         assert db.query(Card).count() == 0
+
+
+class TestFindUnclosedCode:
+    def test_closed_blocks_give_no_warnings(self):
+        text = md(
+            "# Python",
+            "### Q",
+            "```python",
+            "print(1)",
+            "```",
+            "```python",
+            "print(2)",
+            "```",
+        )
+        assert migrate_md.find_unclosed_code(text) == []
+
+    def test_header_inside_closed_block_is_not_a_problem(self):
+        text = md("### Q", "```python", "# комментарий", "```")
+        assert migrate_md.find_unclosed_code(text) == []
+
+    def test_unclosed_at_end_of_file(self):
+        text = md("# Python", "### Что такое lambda?", "текст", "```python", "x = 1")
+        warnings = migrate_md.find_unclosed_code(text)
+        assert len(warnings) == 1
+        assert "Что такое lambda?" in warnings[0]
+        assert "Python" in warnings[0]
+
+    def test_unclosed_in_middle_reports_question_and_lost_header(self):
+        text = md(
+            "# Python",
+            "### Q1",
+            "```python",
+            "x = 1",
+            "### Q2",
+            "ответ",
+            "```python",
+            "y = 2",
+            "```",
+        )
+        warnings = migrate_md.find_unclosed_code(text)
+        assert len(warnings) == 2
+        assert "Q1" in warnings[0]
+        assert "Q2" in warnings[1]
+
+    def test_unclosed_at_end_reports_lost_header_too(self):
+        text = md("### Q1", "```python", "x = 1", "### Q2", "текст")
+        warnings = migrate_md.find_unclosed_code(text)
+        assert len(warnings) == 2
+        assert "Q1" in warnings[0]
+        assert "Q2" in warnings[1]
