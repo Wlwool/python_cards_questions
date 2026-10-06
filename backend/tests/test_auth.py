@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 
@@ -13,7 +13,7 @@ def auth_headers(token: str) -> dict:
 
 
 def make_jwt(sub="admin", key=None, expires_in=timedelta(hours=1)) -> str:
-    payload = {"sub": sub, "exp": datetime.now(timezone.utc) + expires_in}
+    payload = {"sub": sub, "exp": datetime.now(UTC) + expires_in}
     return jwt.encode(payload, key or settings.secret_key, algorithm="HS256")
 
 

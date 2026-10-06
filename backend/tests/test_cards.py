@@ -1,5 +1,5 @@
 import json
-import pytest
+
 from tests.conftest import make_card
 
 

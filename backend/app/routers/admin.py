@@ -8,7 +8,13 @@ from app.auth import create_token, verify_token
 from app.config import settings
 from app.database import get_db
 from app.models import Card
-from app.schemas import CardCreate, CardResponse, CardUpdate, LoginRequest, TokenResponse
+from app.schemas import (
+    CardCreate,
+    CardResponse,
+    CardUpdate,
+    LoginRequest,
+    TokenResponse,
+)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -21,11 +27,15 @@ def login(body: LoginRequest):
         body.password.encode(), settings.admin_password.encode()
     )
     if not password_ok:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password"
+        )
     return TokenResponse(access_token=create_token())
 
 
-@router.post("/cards", response_model=CardResponse, dependencies=[Depends(verify_token)])
+@router.post(
+    "/cards", response_model=CardResponse, dependencies=[Depends(verify_token)]
+)
 def create_card(body: CardCreate, db: Session = Depends(get_db)):
     card = Card(
         question=body.question,
@@ -41,7 +51,11 @@ def create_card(body: CardCreate, db: Session = Depends(get_db)):
     return card
 
 
-@router.put("/cards/{card_id}", response_model=CardResponse, dependencies=[Depends(verify_token)])
+@router.put(
+    "/cards/{card_id}",
+    response_model=CardResponse,
+    dependencies=[Depends(verify_token)],
+)
 def update_card(card_id: int, body: CardUpdate, db: Session = Depends(get_db)):
     card = db.query(Card).filter(Card.id == card_id).first()
     if not card:

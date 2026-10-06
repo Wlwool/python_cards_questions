@@ -1,4 +1,9 @@
 import json
+import os
+import sys
+from html import unescape
+from unittest.mock import MagicMock
+
 from cards import (
     _PRE_CLOSE,
     _PRE_OPEN,
@@ -8,22 +13,9 @@ from cards import (
     get_next_cards,
     get_random_card,
 )
-from html import unescape
-from unittest.mock import MagicMock
-
-import pytest
-import sys
-import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cards import (
-    _split_telegram,
-    format_card,
-    format_card_discord,
-    get_next_cards,
-    get_random_card,
-)
 from config import settings
 from models import Card
 
@@ -116,7 +108,9 @@ class TestFormatCard:
     def test_no_code_example(self):
         card = make_card(code_example=None)
         result = format_card(card)
-        assert any("list" in part.lower() or "последовательность" in part for part in result)
+        assert any(
+            "list" in part.lower() or "последовательность" in part for part in result
+        )
 
     def test_code_example_none_no_pre_tag(self):
         card = make_card(code_example=None)
@@ -199,6 +193,7 @@ class TestGetRandomCard:
         db.query().all.return_value = []
         result = get_random_card(db)
         assert result is None
+
 
 class TestFormatCardDiscord:
     def test_long_code_parts_within_discord_limit(self):

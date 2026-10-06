@@ -1,5 +1,5 @@
 import json
-from typing import Literal, Optional
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_
@@ -14,10 +14,10 @@ router = APIRouter(prefix="/api/cards", tags=["cards"])
 
 @router.get("", response_model=CardListResponse)
 def get_cards(
-    search: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
-    difficulty: Optional[Literal["easy", "normal", "hard"]] = Query(None),
-    tags: Optional[str] = Query(None),  # через запятую: "list,dict"
+    search: str | None = Query(None),
+    category: str | None = Query(None),
+    difficulty: Literal["easy", "normal", "hard"] | None = Query(None),
+    tags: str | None = Query(None),  # через запятую: "list,dict"
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -26,9 +26,7 @@ def get_cards(
 
     if search:
         term = f"%{search}%"
-        query = query.filter(
-            or_(Card.question.ilike(term), Card.answer.ilike(term))
-        )
+        query = query.filter(or_(Card.question.ilike(term), Card.answer.ilike(term)))
 
     if category:
         query = query.filter(Card.category == category)

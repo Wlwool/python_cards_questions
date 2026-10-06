@@ -94,9 +94,7 @@ class TestUpdateCard:
     )
     def test_null_for_required_field_rejected(self, client, db, field):
         card = make_card(db)
-        response = client.put(
-            f"{URL}/{card.id}", json={field: None}, headers=auth()
-        )
+        response = client.put(f"{URL}/{card.id}", json={field: None}, headers=auth())
         assert response.status_code == 422
         # карточка не испортилась и по-прежнему читается
         assert client.get(f"/api/cards/{card.id}").status_code == 200

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -10,16 +10,24 @@ bearer_scheme = HTTPBearer()
 
 
 def create_token() -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=settings.token_expire_hours)
-    return jwt.encode({"sub": "admin", "exp": expire}, settings.secret_key, algorithm="HS256")
+    expire = datetime.now(UTC) + timedelta(hours=settings.token_expire_hours)
+    return jwt.encode(
+        {"sub": "admin", "exp": expire}, settings.secret_key, algorithm="HS256"
+    )
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     try:
-        payload = jwt.decode(credentials.credentials, settings.secret_key, algorithms=["HS256"])
+        payload = jwt.decode(
+            credentials.credentials, settings.secret_key, algorithms=["HS256"]
+        )
         if payload.get("sub") != "admin":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired"
+        ) from None
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        ) from None

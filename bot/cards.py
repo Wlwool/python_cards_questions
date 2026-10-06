@@ -1,7 +1,9 @@
 import json
 import random
 from html import escape
+
 from sqlalchemy.orm import Session
+
 from config import settings
 from models import Card
 
@@ -10,12 +12,16 @@ _CODE_FENCE_CLOSE = "\n```"
 _PRE_OPEN = '<pre><code class="language-python">'
 _PRE_CLOSE = "</code></pre>"
 
+
 def _difficulty_emoji(difficulty: str) -> str:
     return {"easy": "🟢", "normal": "🟡", "hard": "🔴"}.get(difficulty, "⚪")
 
+
 def get_next_cards(db: Session, count: int, last_id: int = 0) -> list[Card]:
     """Возвращает следующие карточки по порядку начиная с last_id."""
-    cards = db.query(Card).filter(Card.id > last_id).order_by(Card.id).limit(count).all()
+    cards = (
+        db.query(Card).filter(Card.id > last_id).order_by(Card.id).limit(count).all()
+    )
 
     if len(cards) < count:
         extra = db.query(Card).order_by(Card.id).limit(count - len(cards)).all()
@@ -37,7 +43,8 @@ def format_card(card: Card) -> list[str]:
     text = (
         f"{difficulty_emoji} <b>{escape(card.category)}</b>\n\n"
         f"❓ <b>{escape(card.question)}</b>\n\n"
-        f"{escape(card.answer)}")
+        f"{escape(card.answer)}"
+    )
 
     tags = json.loads(card.tags or "[]")
     if tags:
@@ -76,6 +83,7 @@ def _split_code_telegram(code: str, limit: int = 4096) -> list[str]:
         code = code[cut:].lstrip("\n")
     return parts
 
+
 def _split_telegram(text: str, limit: int = 4096) -> list[str]:
     if len(text) <= limit:
         return [text]
@@ -100,7 +108,8 @@ def format_card_discord(card: Card) -> list[str]:
     text = (
         f"{difficulty_emoji} **{card.category}**\n\n"
         f"**```{card.question} ```**"
-        f"{card.answer}\n")
+        f"{card.answer}\n"
+    )
 
     tags = json.loads(card.tags or "[]")
     if tags:

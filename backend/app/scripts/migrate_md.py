@@ -11,6 +11,7 @@
 код пример
 ```
 """
+
 import argparse
 import json
 import os
@@ -53,14 +54,16 @@ def parse_cards(text: str) -> list[dict]:
         else:
             code = None
 
-        cards.append({
-            "question": current_question.strip(),
-            "answer": answer,
-            "code_example": code,
-            "category": current_category,
-            "tags": [],
-            "difficulty": "normal",
-        })
+        cards.append(
+            {
+                "question": current_question.strip(),
+                "answer": answer,
+                "code_example": code,
+                "category": current_category,
+                "tags": [],
+                "difficulty": "normal",
+            }
+        )
 
     for line in lines:
         # отслеживает блоки кода
@@ -111,7 +114,9 @@ def parse_cards(text: str) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", required=True, help="Path to questions.md")
-    parser.add_argument("--clear", action="store_true", help="Удалить все карточки перед импортом")
+    parser.add_argument(
+        "--clear", action="store_true", help="Удалить все карточки перед импортом"
+    )
     args = parser.parse_args()
 
     with open(args.file, encoding="utf-8") as f:
