@@ -4,6 +4,8 @@ import sys
 from html import unescape
 from unittest.mock import MagicMock
 
+import pytest
+
 from cards import (
     _PRE_CLOSE,
     _PRE_OPEN,
@@ -18,6 +20,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from config import settings
 from models import Card
+
+BAD_TAGS = ["{bad", "5", '"abc"', '{"a": 1}', "[1, 2]"]
 
 
 def make_card(**kwargs) -> Card:
@@ -201,3 +205,25 @@ class TestFormatCardDiscord:
         card = make_card(code_example="x" * 5000)
         result = format_card_discord(card)
         assert all(len(part) <= settings.discord_max_length for part in result)
+
+
+class TestBrokenTags:
+    @pytest.mark.parametrize("tags", BAD_TAGS)
+    def test_telegram_ignores_invalid_tags(self, tags):
+        card = make_card(tags=tags)
+        assert "🏷" not in "".join(format_card(card))
+
+    @pytest.mark.parametrize("tags", BAD_TAGS)
+    def test_discord_ignores_invalid_tags(self, tags):
+        card = make_card(tags=tags)
+        assert "🏷" not in "".join(format_card_discord(card))
+
+    def test_invalid_tags_logged_with_card_id(self, caplog):
+        card = make_card(id=7, tags="{bad")
+        with caplog.at_level("WARNING"):
+            format_card(card)
+        assert "id=7" in caplog.text
+
+    def test_discord_valid_tags_included(self):
+        card = make_card(tags=json.dumps(["list", "basics"]))
+        assert "`list`" in "".join(format_card_discord(card))
