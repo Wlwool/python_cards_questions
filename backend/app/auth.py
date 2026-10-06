@@ -20,6 +20,12 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sche
         if payload.get("sub") != "admin":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired"
+        ) from None
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        ) from None
