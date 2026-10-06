@@ -18,6 +18,10 @@ jobs:
         working-directory: backend
         run: uv sync
 
+      - name: Lint (ruff)
+        working-directory: backend
+        run: uv run ruff check
+
       - name: Run tests
         working-directory: backend
         env:
@@ -40,6 +44,10 @@ jobs:
       - name: Install dependencies
         working-directory: bot
         run: uv sync
+
+      - name: Lint (ruff)
+        working-directory: bot
+        run: uv run ruff check
 
       - name: Run tests
         working-directory: bot
