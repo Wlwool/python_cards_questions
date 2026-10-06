@@ -2,7 +2,7 @@ import json
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -25,8 +25,13 @@ def get_cards(
     query = db.query(Card)
 
     if search:
-        term = f"%{search}%"
-        query = query.filter(or_(Card.question.ilike(term), Card.answer.ilike(term)))
+        term = f"%{search.lower()}%"
+        query = query.filter(
+            or_(
+                func.py_lower(Card.question).like(term),
+                func.py_lower(Card.answer).like(term),
+            )
+        )
 
     if category:
         query = query.filter(Card.category == category)

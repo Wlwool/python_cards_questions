@@ -41,6 +41,11 @@ class TestGetCards:
         response = client.get("/api/cards?search=list comprehension")
         assert response.json()["total"] == 1
 
+    def test_search_case_insensitive_cyrillic(self, client, db):
+        make_card(db, question="Что такое Декоратор?")
+        response = client.get("/api/cards?search=декоратор")
+        assert response.json()["total"] == 1
+
     def test_filter_by_category(self, client, db):
         make_card(db, category="Python")
         make_card(db, category="Django")
