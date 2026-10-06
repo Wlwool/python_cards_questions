@@ -26,9 +26,7 @@ def get_cards(
 
     if search:
         term = f"%{search}%"
-        query = query.filter(
-            or_(Card.question.ilike(term), Card.answer.ilike(term))
-        )
+        query = query.filter(or_(Card.question.ilike(term), Card.answer.ilike(term)))
 
     if category:
         query = query.filter(Card.category == category)

@@ -19,8 +19,9 @@ class Card(Base):
     tags = Column(Text, default="[]")
     difficulty = Column(String(10), nullable=False, default="normal")
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime, default=lambda: datetime.now(UTC),
-                        onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     @validates("difficulty")
     def validate_difficulty(self, key, value):
