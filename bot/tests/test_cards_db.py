@@ -57,6 +57,7 @@ class TestGetNextCardsRealDb:
     def test_empty_db_returns_empty(self, db):
         assert get_next_cards(db, 3, last_id=0) == []
 
+
 class TestGetRandomCardRealDb:
     def test_returns_one_of_the_cards(self, db):
         add_cards(db, 3)
