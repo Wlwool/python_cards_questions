@@ -14,6 +14,7 @@ _CODE_FENCE_OPEN = "```python\n"
 _CODE_FENCE_CLOSE = "\n```"
 _PRE_OPEN = '<pre><code class="language-python">'
 _PRE_CLOSE = "</code></pre>"
+_TELEGRAM_MAX_LENGTH = 4096
 
 
 def _difficulty_emoji(difficulty: str) -> str:
@@ -66,7 +67,7 @@ def format_card(card: Card) -> list[str]:
     if tags:
         tags_line = " ".join(f"<code>{escape(t)}</code>" for t in tags)
         text += f"\n\n🏷 {tags_line}"
-    parts = _split_telegram(text)
+    parts = _split_text(text, _TELEGRAM_MAX_LENGTH)
 
     if card.code_example:
         for code_part in _split_code_telegram(card.code_example):
@@ -100,7 +101,8 @@ def _split_code_telegram(code: str, limit: int = 4096) -> list[str]:
     return parts
 
 
-def _split_telegram(text: str, limit: int = 4096) -> list[str]:
+def _split_text(text: str, limit: int) -> list[str]:
+    """Режет текст на части не длиннее limit, предпочитая границы строк."""
     if len(text) <= limit:
         return [text]
 
@@ -131,7 +133,7 @@ def format_card_discord(card: Card) -> list[str]:
     if tags:
         text += "\n\n🏷 " + " ".join(f"`{t}`" for t in tags)
 
-    parts = _split_discord(text)
+    parts = _split_text(text, settings.discord_max_length)
     if card.code_example:
         _append_discord_code(card.code_example, parts)
     return parts
@@ -146,26 +148,5 @@ def _append_discord_code(code: str, parts: list[str]) -> None:
         parts.append(f"{_CODE_FENCE_OPEN}{code}{_CODE_FENCE_CLOSE}")
         return
 
-    for chunk in _split_discord(code, limit=chunk_limit):
+    for chunk in _split_text(code, chunk_limit):
         parts.append(f"{_CODE_FENCE_OPEN}{chunk}{_CODE_FENCE_CLOSE}")
-
-
-def _split_discord(text: str, limit: int | None = None) -> list[str]:
-    if limit is None:
-        limit = settings.discord_max_length
-
-    if len(text) <= limit:
-        return [text]
-
-    parts = []
-    while text:
-        if len(text) <= limit:
-            parts.append(text)
-            break
-        split_at = text.rfind("\n", 0, limit)
-        if split_at == -1:
-            split_at = limit
-        parts.append(text[:split_at])
-        text = text[split_at:].lstrip()
-
-    return parts
