@@ -54,20 +54,23 @@ class TestSplitMessage:
         assert all(len(p) <= 4096 for p in parts)
 
     def test_split_preserves_content(self):
-        text = "слово " * 1000
-        parts = _split_telegram(text)
-        assert "".join(parts).replace(" ", "") == text.replace(" ", "")
+        text = "\n".join(f"строка {i}" for i in range(1000))
+        parts = _split_telegram(text, limit=500)
+        assert len(parts) > 1
+        assert "\n".join(parts) == text
 
     def test_exact_limit_not_split(self):
         text = "а" * 4096
         assert _split_telegram(text) == [text]
 
     def test_split_prefers_newline(self):
-        line = "а" * 100 + "\n"
-        text = line * 50
+        line = "а" * 100
+        text = (line + "\n") * 50
         parts = _split_telegram(text, limit=512)
+        assert len(parts) > 1
+        assert all(len(part) <= 512 for part in parts)
         for part in parts:
-            assert len(part) <= 512
+            assert all(item == line for item in part.split("\n") if item)
 
 
 class TestFormatCard:
