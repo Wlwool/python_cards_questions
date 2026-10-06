@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import sys
 
@@ -83,3 +84,19 @@ class TestPostRateLimit:
         sender = make_sender([FakeResponse(429, json_error=True), FakeResponse(204)])
         assert asyncio.run(sender._post("x")) is True
         assert sleeps == [5]
+
+class TestWithoutWebhook:
+    def test_empty_url_does_not_raise(self):
+        sender = DiscordSender("")
+        assert sender.enabled is False
+
+    def test_send_without_webhook_is_noop(self):
+        sender = DiscordSender("")
+        assert asyncio.run(sender.send(["текст"])) is True
+
+    def test_start_without_webhook_warns_and_opens_no_session(self, caplog):
+        sender = DiscordSender("")
+        with caplog.at_level(logging.WARNING):
+            asyncio.run(sender.start())
+        assert sender.session is None
+        assert "DISCORD_WEBHOOK_URL" in caplog.text

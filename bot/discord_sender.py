@@ -15,12 +15,14 @@ _MAX_RETRY_AFTER = 60  # потолок паузы при 429, сек
 
 class DiscordSender:
     def __init__(self, webhook_url: str) -> None:
-        if not webhook_url:
-            raise ValueError("Discord webhook URL не задан")
-        self.webhook_url = webhook_url
+        self.webhook_url = webhook_url.strip()
+        self.enabled = bool(self.webhook_url)
         self.session: aiohttp.ClientSession | None = None
 
     async def start(self) -> None:
+        if not self.enabled:
+            log.warning("Discord отключён: DISCORD_WEBHOOK_URL не задан")
+            return
         self.session = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=settings.discord_timeout)
         )
@@ -30,7 +32,7 @@ class DiscordSender:
             await self.session.close()
 
     async def send(self, messages: list[str]) -> bool:
-        if not messages:
+        if not self.enabled or not messages:
             return True
 
         failed = 0
