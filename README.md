@@ -89,3 +89,9 @@ docker compose logs -f
 
 docker compose logs -f bot
 docker compose logs -f backend
+
+---
+
+git pull
+docker compose build bot
+docker compose up -d --no-deps bot
