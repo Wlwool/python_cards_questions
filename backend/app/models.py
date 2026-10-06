@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import validates
@@ -18,9 +18,9 @@ class Card(Base):
     # хранит список тегов как JSON строку: ["list", "dict"]
     tags = Column(Text, default="[]")
     difficulty = Column(String(10), nullable=False, default="normal")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC),
+                        onupdate=lambda: datetime.now(UTC))
 
     @validates("difficulty")
     def validate_difficulty(self, key, value):

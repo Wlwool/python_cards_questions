@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, field_validator
 class CardBase(BaseModel):
     question: str
     answer: str
-    code_example: Optional[str] = None
+    code_example: str | None = None
     category: str
     tags: list[str] = []
     difficulty: Literal["easy", "normal", "hard"] = "normal"
@@ -19,12 +19,12 @@ class CardCreate(CardBase):
 
 
 class CardUpdate(BaseModel):
-    question: Optional[str] = None
-    answer: Optional[str] = None
-    code_example: Optional[str] = None
-    category: Optional[str] = None
-    tags: Optional[list[str]] = None
-    difficulty: Optional[Literal["easy", "normal", "hard"]] = None
+    question: str | None = None
+    answer: str | None = None
+    code_example: str | None = None
+    category: str | None = None
+    tags: list[str] | None = None
+    difficulty: Literal["easy", "normal", "hard"] | None = None
 
     # Optional здесь означает - поле можно не передавать.
     # Для code_example null оставлен допустимым.

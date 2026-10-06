@@ -8,7 +8,13 @@ from app.auth import create_token, verify_token
 from app.config import settings
 from app.database import get_db
 from app.models import Card
-from app.schemas import CardCreate, CardResponse, CardUpdate, LoginRequest, TokenResponse
+from app.schemas import (
+    CardCreate,
+    CardResponse,
+    CardUpdate,
+    LoginRequest,
+    TokenResponse,
+)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
