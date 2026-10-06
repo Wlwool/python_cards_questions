@@ -23,8 +23,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.database import SessionLocal, engine
 from app.models import Base, Card
 
-Base.metadata.create_all(bind=engine)
-
 
 def parse_cards(text: str) -> list[dict]:
     cards = []
@@ -214,6 +212,7 @@ def main():
     cards_data = parse_cards(text)
     print(f"Найдено карточек: {len(cards_data)}")
 
+    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         if args.clear:

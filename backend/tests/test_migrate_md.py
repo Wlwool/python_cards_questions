@@ -1,3 +1,6 @@
+import importlib
+from unittest.mock import patch
+
 from app.models import Card
 from app.scripts import migrate_md
 from app.scripts.migrate_md import parse_cards
@@ -167,3 +170,10 @@ class TestFindUnclosedCode:
         assert len(warnings) == 2
         assert "Q1" in warnings[0]
         assert "Q2" in warnings[1]
+
+
+class TestImportHasNoSideEffects:
+    def test_import_does_not_create_tables(self):
+        with patch("app.models.Base.metadata.create_all") as create_all:
+            importlib.reload(migrate_md)
+        create_all.assert_not_called()
