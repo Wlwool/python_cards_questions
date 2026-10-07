@@ -1,5 +1,7 @@
 # Python Cards Questions
 
+[![Tests](https://github.com/Wlwool/python_cards_questions/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Wlwool/python_cards_questions/actions/workflows/tests.yml)
+
 Карточки "вопрос - ответ - пример кода" для подготовки к собеседованиям по Python. Проект состоит из трёх частей:
 - **бот** присылает серию карточек по расписанию в Telegram и Discord;
 - **backend** (REST API) хранит карточки и отдаёт их с поиском, фильтрами и пагинацией;
